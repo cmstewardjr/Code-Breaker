@@ -220,7 +220,7 @@
         .key-button.special {
             min-width: 60px; /* Wider for Enter/Backspace */
             background-color: #070;
-            text-shadow: none; /* No shadow for special keys text */
+            text-shadow: none; /* No shadow on special keys text */
         }
 
         /* Congratulations Screen */
@@ -685,8 +685,6 @@
             const seedArray = cyrb128(playerSeed);
             seededRNG = sfc32(seedArray[0], seedArray[1], seedArray[2], seedArray[3]);
 
-            // To ensure sentences get longer each round, we use the pre-sorted 
-            // basePuzzles array directly without shuffling.
             allRoundsPuzzles = [...basePuzzles];
         }
 
@@ -695,8 +693,6 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
 
-            // Calculate failLineY based on input section's position
-            // failLineY should be the top edge of the input section on the canvas
             const inputSectionRect = inputSection.getBoundingClientRect();
             failLineY = inputSectionRect.top; 
 
@@ -709,10 +705,9 @@
                 streams[i] = {
                     x: i * font_size,
                     chars: initialChars,
-                    // Slightly faster streams: 4 to 9 frames per row drop (previously 5-10)
-                    speed: Math.floor(seededRNG() * (9 - 4) + 4), 
+                    speed: Math.floor(seededRNG() * (12 - 6) + 6), 
                     frameCounter: Math.floor(seededRNG() * 10),
-                    headY: -Math.floor(seededRNG() * initialChars.length) * font_size // Start head randomly off-screen above
+                    headY: -Math.floor(seededRNG() * initialChars.length) * font_size 
                 };
             }
 
@@ -721,7 +716,7 @@
         }
 
         function drawMatrixRain() {
-            ctx.fillStyle = "#000";
+            ctx.fillStyle = "rgba(0, 0, 0, 0.1)"; // Fading effect for trails
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             ctx.font = font_size + "px monospace";
@@ -732,8 +727,7 @@
 
                 stream.frameCounter++;
                 if (stream.frameCounter >= stream.speed) {
-                    stream.headY += font_size; // Move stream head down one row
-                    // If stream head goes off bottom, reset it to a random position at the top
+                    stream.headY += font_size;
                     if (stream.headY >= canvas.height) {
                         stream.headY = -Math.floor(seededRNG() * stream.chars.length) * font_size;
                     }
@@ -743,24 +737,18 @@
                 for (let j = 0; j < stream.chars.length; j++) {
                     const charY = stream.headY + j * font_size;
 
-                    // Only draw characters that are currently visible on screen
                     if (charY > -font_size && charY < canvas.height + font_size) {
                         let charObj = stream.chars[j];
-                        let charToDraw = charObj.char;
-
-                        // Randomly change regular characters (not the glowing one) for dynamic look
+                        
                         if (!charObj.isGlowing && seededRNG() < charChangeProbability) {
                             charObj.char = createRandomCharObject().char;
                         }
 
-                        // --- Miss Detection Logic ---
-                        // Check if it's the glowing character, game is active, and it hasn't been missed yet
                         if (charObj.isGlowing && gameActive && !charObj.missed) {
-                            // Check if the glowing character has fallen below the fail line
-                            if (charY + font_size > failLineY) { // Adding font_size because charY is top-left corner
-                                charObj.missed = true; // Mark as missed to prevent multiple counts
-                                charObj.isGlowing = false; // Stop glowing
-                                charObj.char = createRandomCharObject().char; // Revert to a random char
+                            if (charY + font_size > failLineY) {
+                                charObj.missed = true;
+                                charObj.isGlowing = false;
+                                charObj.char = createRandomCharObject().char;
 
                                 missCount++;
                                 missDisplay.textContent = `Misses: ${missCount}/${maxMisses}`;
@@ -771,7 +759,6 @@
                                 if (missCount >= maxMisses) {
                                     gameOver();
                                 } else {
-                                    // Prepare for next character after a brief delay
                                     setTimeout(() => {
                                         gameMessage.textContent = "Finding next anomaly...";
                                         showNextMessageChar();
@@ -780,38 +767,24 @@
                             }
                         }
 
-                        // --- Canvas Shadow and Color for Glow Effect ---
+                        // --- SIMPLIFIED CHARACTER RENDERING ---
+                        // Set default style for regular green rain
+                        let charOpacity = 1.0 - ((j * font_size) / (stream.chars.length * font_size) * 0.95);
+                        if(charOpacity < 0.1) charOpacity = 0.1;
+                        ctx.fillStyle = `rgba(0, 255, 0, ${charOpacity})`;
+                        
+                        // OVERRIDE for the target character with a solid, bright color. NO GLOW.
                         if (charObj.isGlowing) {
-                            // Apply purple stroke for outline first
-                            ctx.strokeStyle = '#E0BBE4'; // Lighter purple
-                            ctx.lineWidth = 2; // Thickness of the outline
-                            ctx.strokeText(charToDraw, colX, charY);
-
-                            // Then fill with purple and strong glow
-                            ctx.fillStyle = "#800080"; // Purple
-                            ctx.shadowColor = "#E0BBE4"; // Lighter purple glow
-                            ctx.shadowBlur = 40; // Stronger glow
-                            ctx.shadowOffsetX = 0;
-                            ctx.shadowOffsetY = 0;
-                        } else {
-                            // Green characters with calculated opacity (no blur)
-                            // Characters closer to the middle of the screen are brighter
-                            let charOpacity;
-                            const distanceFromCenter = Math.abs(charY - (canvas.height / 2));
-                            const maxDistance = canvas.height / 2;
-                            charOpacity = 1.0 - (distanceFromCenter / maxDistance * 0.8); // Fades out towards top/bottom
-                            if (charOpacity < 0.2) charOpacity = 0.2; // Minimum visibility
-
-                            ctx.fillStyle = `rgba(0, 255, 0, ${charOpacity})`;
-                            ctx.shadowBlur = 0; // NO shadow for regular rain characters
+                            ctx.fillStyle = "#E0BBE4"; // A bright, clear lavender color
                         }
-                        ctx.fillText(charToDraw, colX, charY);
+                        
+                        ctx.fillText(charObj.char, colX, charY);
                     }
                 }
             }
             requestAnimationFrame(drawMatrixRain);
         }
-
+        
         // --- Screen Transition Logic ---
         function transitionToScreen(targetScreenElement, startCallback, endCallback) {
             let currentActiveScreen = null;
@@ -875,11 +848,8 @@
         function loadRound() {
             let storedRound = localStorage.getItem('matrixCurrentRound');
             currentRound = storedRound ? parseInt(storedRound) : 0;
-            // Ensure currentRound loops back if all unique puzzles have been played
             if (currentRound >= allRoundsPuzzles.length) {
                 currentRound = 0; 
-                // Optionally regenerate seed if you want a new shuffled sequence after all 100 rounds
-                // initializePlayerPuzzleSequence(); 
             }
         }
 
@@ -888,91 +858,80 @@
         }
 
         function startGame() {
-            // Reset game state
-            loadRound(); // Load the stored or reset round
+            loadRound();
             missCount = 0;
             revealedCharCount = 0;
             currentGlowingCharObject = null;
             currentGlowingColumnIndex = -1;
-            gameActive = true; // Enable game logic
-            currentPuzzle = allRoundsPuzzles[currentRound]; // Set the current puzzle based on round
+            gameActive = true;
+            currentPuzzle = allRoundsPuzzles[currentRound];
 
-            // Calculate max misses based on puzzle length (new algorithm)
             const numLettersAndNumbersToType = currentPuzzle.message.replace(/ /g, '').length;
-            maxMisses = Math.max(3, Math.ceil(numLettersAndNumbersToType / 5)); // At least 3 misses, then 1 miss per 5 non-space chars
+            maxMisses = Math.max(3, Math.ceil(numLettersAndNumbersToType / 4));
             missDisplay.textContent = `Misses: ${missCount}/${maxMisses}`;
 
-            currentRoundDisplay.textContent = currentRound + 1; // For Congrats screen display
+            currentRoundDisplay.textContent = currentRound + 1;
 
-            // Clear input and messages
             gameMessage.textContent = "";
-            lastTypedChar = ''; // Clear any pending input from keyboard
+            lastTypedChar = '';
             
-            // Start the process of showing the first char (after delay)
             setTimeout(() => {
-                gameMessage.textContent = ""; // Clear "Finding next anomaly..." if it was there
+                gameMessage.textContent = ""; 
                 showNextMessageChar();
             }, puzzleAdvanceDelayMs); 
         }
 
         function showNextMessageChar() {
-            // Ensure any previously glowing character stops glowing and resets
             if (currentGlowingCharObject) {
                 currentGlowingCharObject.isGlowing = false;
-                currentGlowingCharObject.char = createRandomCharObject().char; // Change back to random char
-                currentGlowingCharObject.missed = false; // Reset missed status
-                currentGlowingCharObject = null; // Clear reference
+                currentGlowingCharObject.char = createRandomCharObject().char;
+                currentGlowingCharObject.missed = false;
+                currentGlowingCharObject = null;
                 currentGlowingColumnIndex = -1;
             }
 
             if (revealedCharCount < currentPuzzle.message.length) {
                 const charToReveal = currentPuzzle.message[revealedCharCount];
                 
-                // --- Handle Spaces Automatically ---
                 if (charToReveal === ' ') {
                     gameMessage.textContent = "Space detected! Finding next anomaly...";
                     gameMessage.style.color = "#0F0";
                     gameMessage.style.textShadow = "0 0 8px #0F0";
-                    revealedCharCount++; // Advance to next char
-                    setTimeout(() => showNextMessageChar(), puzzleAdvanceDelayMs); // Auto-advance after a short delay
-                    return; // Don't wait for input for spaces
+                    revealedCharCount++;
+                    setTimeout(() => showNextMessageChar(), puzzleAdvanceDelayMs);
+                    return;
                 }
                 
-                // For non-space characters: set up the active glowing character
-                currentGlowingColumnIndex = Math.floor(seededRNG() * columns); // Choose random column for this char
+                currentGlowingColumnIndex = Math.floor(seededRNG() * columns);
                 
-                // Ensure the column exists and has characters
                 if (streams[currentGlowingColumnIndex] && streams[currentGlowingColumnIndex].chars.length > 0) {
                     const stream = streams[currentGlowingColumnIndex];
                     
-                    // Force the stream head to Y=0 to make the glowing char fall from top
                     stream.headY = 0; 
+                    stream.frameCounter = 0;
                     
-                    // The character object at index 0 of the stream's chars array will now be at Y=0
                     currentGlowingCharObject = stream.chars[0];
-                    currentGlowingCharObject.char = charToReveal; // Set its character
-                    currentGlowingCharObject.isGlowing = true; // Make it glow
-                    currentGlowingCharObject.missed = false; // Ensure it's not marked as missed yet
+                    currentGlowingCharObject.char = charToReveal;
+                    currentGlowingCharObject.isGlowing = true;
+                    currentGlowingCharObject.missed = false;
                 } else {
                     console.error("Could not find stream to inject glowing char! Columns:", columns);
                     gameMessage.textContent = "Error: Puzzle could not start. Try resizing.";
                     gameMessage.style.color = "#F00";
                 }
                 
-                gameMessage.textContent = ""; // Clear previous messages for new letter
+                gameMessage.textContent = "";
             } else {
-                // All characters revealed, puzzle solved!
                 puzzleSolved();
             }
         }
 
         function checkAnswer() {
             const userAnswer = lastTypedChar.trim().toUpperCase();
-            lastTypedChar = ''; // Clear last typed character after checking
+            lastTypedChar = '';
 
             if (!gameActive || !currentGlowingCharObject || currentGlowingCharObject.char === ' ' || currentGlowingCharObject.missed) {
-                // If game is not active, or no active glowing char, or it's a space (auto-skipped), or already missed, ignore input.
-                gameMessage.textContent = "Waiting for a character or already handled."; // Updated message
+                gameMessage.textContent = "Waiting for a character or already handled.";
                 gameMessage.style.color = "#F00";
                 gameMessage.style.textShadow = "0 0 8px #F00";
                 return;
@@ -985,37 +944,35 @@
                 gameMessage.style.color = "#0F0";
                 gameMessage.style.textShadow = "0 0 8px #0F0";
                 
-                // Stop the current char from glowing and reset reference
                 currentGlowingCharObject.isGlowing = false;
-                currentGlowingCharObject.char = createRandomCharObject().char; // Change it back to random char
-                currentGlowingCharObject.missed = false; // Reset missed status
+                currentGlowingCharObject.char = createRandomCharObject().char;
+                currentGlowingCharObject.missed = false;
                 currentGlowingCharObject = null;
                 currentGlowingColumnIndex = -1;
 
-                revealedCharCount++; // Advance to the next character in the puzzle
+                revealedCharCount++;
                 
-                // Introduce a delay before showing the next character
                 setTimeout(() => {
                     showNextMessageChar();
                 }, puzzleAdvanceDelayMs); 
 
             } else {
-                gameMessage.textContent = `INCORRECT. Select the correct character.`; // More generic message
+                gameMessage.textContent = `INCORRECT. Select the correct character.`;
                 gameMessage.style.color = "#F00";
                 gameMessage.style.textShadow = "0 0 8px #F00";
             }
         }
 
         function puzzleSolved() {
-            gameActive = false; // Pause game logic
+            gameActive = false;
             gameMessage.textContent = "Message uncovered!";
             gameMessage.style.color = "#0F0";
             gameMessage.style.textShadow = "0 0 8px #0F0";
 
-            revealedMessageDisplay.textContent = currentPuzzle.solution; // Use solution for display
+            revealedMessageDisplay.textContent = currentPuzzle.solution;
             currentRound++;
             saveRound();
-            currentRoundDisplay.textContent = currentRound + 1; // Display for next round on congrats screen
+            currentRoundDisplay.textContent = currentRound + 1;
 
             setTimeout(() => {
                 displayScreen('congrats-screen');
@@ -1023,14 +980,13 @@
         }
 
         function gameOver() {
-            gameActive = false; // Pause game logic
+            gameActive = false;
             gameMessage.textContent = "GAME OVER!";
             gameMessage.style.color = "#F00";
             gameMessage.style.textShadow = "0 0 8px #F00";
 
-            finalMissCountDisplay.textContent = missCount; // Display final miss count
+            finalMissCountDisplay.textContent = missCount;
             
-            // Clear any lingering glowing character immediately
             if (currentGlowingCharObject) {
                 currentGlowingCharObject.isGlowing = false;
                 currentGlowingCharObject.char = createRandomCharObject().char;
@@ -1038,7 +994,6 @@
             }
             currentGlowingCharObject = null;
             currentGlowingColumnIndex = -1;
-
 
             setTimeout(() => {
                 displayScreen('game-over-screen');
@@ -1057,7 +1012,6 @@
         // --- Event Listeners ---
         window.addEventListener('resize', initializeCanvas); 
         
-        // Splash Screen interaction (any key/click)
         let splashActive = true;
         function handleSplashInteraction() {
             if (splashActive) {
@@ -1079,53 +1033,35 @@
         });
 
         playAgainButton.addEventListener('click', () => {
-            // Reset current round for "Play Again"
             localStorage.setItem('matrixCurrentRound', 0); 
             startGame();
             displayScreen('game-screen');
         });
         
-        // Add event listeners for custom keyboard buttons
         customKeyboard.querySelectorAll('.key-button').forEach(button => {
             button.addEventListener('click', (event) => {
-                event.preventDefault(); // Prevent default actions, e.g., scrolling
+                event.preventDefault(); 
 
-                if (!gameActive) return; // Do nothing if game is not active
+                if (!gameActive) return;
 
-                const key = button.textContent.trim().toUpperCase(); // Get text, trim, and uppercase
+                const key = button.textContent.trim().toUpperCase();
 
-                if (key === 'DEL') {
-                    // DEL is ignored as we don't have an input field to clear
-                    gameMessage.textContent = ""; 
-                } else if (key === 'ENTER') {
-                    // ENTER is less critical now as single char presses submit automatically
-                    // It can be kept to re-check the current state or simply do nothing meaningful
-                    // For now, it just re-triggers check, effectively doing nothing if a char wasn't just set.
-                    checkAnswer(); 
+                if (key === 'DEL' || key === 'ENTER') {
+                    // Ignore these special keys for now
                 } else {
-                    lastTypedChar = key; // Set the single character
-                    // Immediately check answer when a character key (letter or number) is pressed
+                    lastTypedChar = key;
                     checkAnswer(); 
                 }
             });
         });
 
-        // Add a global keydown listener for desktop users to still type
         document.addEventListener('keydown', (event) => {
             if (!gameActive) return;
 
-            const key = event.key.toUpperCase(); // Get the pressed key
+            const key = event.key.toUpperCase();
 
-            // Regex to match single alphanumeric characters (A-Z, 0-9)
             if (key.length === 1 && (/[A-Z0-9]/).test(key)) { 
                 lastTypedChar = key;
-                checkAnswer();
-            } else if (key === 'BACKSPACE' || key === 'DELETE') {
-                // Clear lastTypedChar, though it's already cleared after checkAnswer
-                lastTypedChar = ''; 
-                gameMessage.textContent = ""; // Optional: clear message on backspace
-            } else if (key === 'ENTER') {
-                // Check answer on Enter for explicit submission, though auto-submit is primary
                 checkAnswer();
             }
         });
@@ -1134,12 +1070,10 @@
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             initializePlayerPuzzleSequence();
-            initializeCanvas(); // Initialize canvas and calculate failLineY
+            initializeCanvas();
 
-            // Set up initial state for miss display (will be updated by startGame)
             missDisplay.textContent = `Misses: 0/3`; 
 
-            // Load round only at the very start to display on menus
             loadRound();
             currentRoundDisplay.textContent = currentRound + 1; 
 
@@ -1157,7 +1091,7 @@
             document.addEventListener('keydown', handleSplashInteraction);
             document.addEventListener('click', handleSplashInteraction);
 
-            drawMatrixRain(); // Start the background animation
+            drawMatrixRain();
         });
     </script>
 </body>
