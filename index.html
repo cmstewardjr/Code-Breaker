@@ -5,19 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code: Breaker</title>
     <style>
-        body {
+        body, html {
             margin: 0;
-            overflow: hidden; /* Prevent scrolling of the background */
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
             background-color: #000;
-            font-family: 'Courier New', Courier, monospace;
-            color: #0F0; /* Green */
-            text-shadow: 0 0 8px #0F0; /* Subtle glow for default text */
-            display: flex;
+        }
+
+        /* --- NEW: INTRO SPLASH SCREEN CONTAINER --- */
+        #intro-splash-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            z-index: 1000; /* High z-index to appear on top */
+            display: flex; /* Use flex to center canvas */
             justify-content: center;
             align-items: center;
-            min-height: 100vh; /* Ensure body takes full viewport height */
         }
-        canvas {
+        #intro-splash-canvas {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+
+        /* --- Main Game Canvas (Matrix Rain) --- */
+        #matrixCanvas {
             display: block;
             position: fixed;
             top: 0;
@@ -29,20 +46,19 @@
             position: relative;
             z-index: 1; /* Bring game elements to foreground */
             background-color: rgba(0, 0, 0, 1.0); /* Solid black background for menus */
-            padding: 25px; /* Slightly less padding for better mobile fit */
+            padding: 25px;
             border-radius: 10px;
             box-shadow: 0 0 20px rgba(0, 255, 0, 0.5); /* Green box shadow */
             text-align: center;
-            max-width: 90%; /* Allow it to take more width on small screens */
-            margin: 20px; /* Add some margin for smaller screens */
-            display: flex; /* Use flexbox for internal alignment */
+            max-width: 90%;
+            margin: 20px;
+            display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-height: auto; /* Allow height to shrink based on content */
-            min-width: auto; /* Allow width to shrink based on content for responsiveness */
-            color: #0F0; /* Text color for screens */
-            box-sizing: border-box; /* Include padding and border in the element's total width */
+            color: #0F0;
+            box-sizing: border-box;
+            font-family: 'Courier New', Courier, monospace;
         }
         /* --- Fading Animation for ALL Screens --- */
         .screen-transition {
@@ -58,9 +74,7 @@
         }
 
         /* --- Initial Screen States (managed by JS for transitions) --- */
-        #splash-screen {
-            display: flex; /* Starts visible by default */
-        }
+        #splash-screen, /* This is the GAME's text splash screen */
         #how-to-play-menu,
         #game-screen,
         #congrats-screen,
@@ -165,9 +179,6 @@
             max-width: 90%; /* Ensure input section doesn't go off screen on mobile */
             box-sizing: border-box; /* Include padding/border in max-width */
         }
-
-        /* Removed #answer-input styles as the element is gone */
-
         #game-message {
             min-height: 1.5em; /* Reserve space to prevent layout shifts */
             color: #F00; /* Default for incorrect (red) */
@@ -176,8 +187,6 @@
             font-size: 1.1em;
             white-space: nowrap; /* Prevent message from wrapping (important for "Space detected...") */
         }
-
-        /* Custom Keyboard Styles */
         #custom-keyboard {
             background-color: rgba(0, 0, 0, 0.8); /* Darker, slightly opaque background */
             padding: 10px;
@@ -185,263 +194,64 @@
             box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
             margin-top: 15px; /* Space between input section and keyboard */
             max-width: 90%;
-            display: flex; /* Changed from 'none' to 'flex' as it's always shown now */
+            display: flex;
             flex-direction: column;
             align-items: center;
         }
-
-        .keyboard-row {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 8px; /* Space between rows */
-        }
-
-        .key-button {
-            background-color: #050; /* Dark green */
-            color: #0F0; /* Bright green text */
-            border: 1px solid #0F0;
-            padding: 10px 12px;
-            margin: 3px;
-            font-size: 1.1em;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: background-color 0.2s, box-shadow 0.2s;
-            min-width: 35px; /* Ensure buttons are wide enough */
-            text-align: center;
-            box-sizing: border-box;
-            text-shadow: 0 0 5px #0F0;
-        }
-
-        .key-button:hover {
-            background-color: #0A0;
-            box-shadow: 0 0 10px #0F0;
-        }
-        
-        .key-button.special {
-            min-width: 60px; /* Wider for Enter/Backspace */
-            background-color: #070;
-            text-shadow: none; /* No shadow on special keys text */
-        }
-
-        /* Congratulations Screen */
-        #congrats-screen {
-            /* Visibility managed by JS */
-        }
-        #congrats-screen .message-display {
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #FFF; /* White for the revealed message */
-            text-shadow: 0 0 15px #FFF, 0 0 25px #0F0; /* Strong glow */
-            margin: 20px 0;
-            padding: 10px;
-            border: 2px solid #0F0;
-            border-radius: 5px;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-
-        /* Game Over Screen (similar to congrats) */
-        #game-over-screen {
-            /* Visibility managed by JS */
-        }
-        #game-over-screen h1 {
-            color: #F00; /* Red for game over */
-            text-shadow: 0 0 10px #F00;
-        }
-        #game-over-screen .miss-info {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #F88; /* Lighter red */
-            margin-top: 10px;
-        }
-
-        /* Blink effect for "Press Any Key" */
-        .blink {
-            animation: blinker 1.5s linear infinite;
-            font-size: 1.5em;
-            margin-top: 30px;
-            text-shadow: 0 0 10px #0F0;
-        }
-
-        @keyframes blinker {
-            50% { opacity: 0; }
-        }
-
-        /* Media queries for better mobile and small screen adjustments */
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 2em; /* Slightly smaller title for mobile */
-            }
-            h2 {
-                font-size: 1.5em; /* Slightly smaller sub-title for mobile */
-            }
-            p {
-                font-size: 1em; /* Base font size remains good */
-            }
-            .button {
-                font-size: 1.1em; /* Smaller button text for mobile */
-                padding: 10px 20px;
-            }
-            .screen-container {
-                padding: 15px; /* Reduce padding further for very small screens */
-                margin: 10px; /* Reduce margin */
-                max-width: 95%; /* Allow it to take up more screen width */
-            }
-            /* Removed #answer-input adjustments */
-            .instructions-scrollable {
-                max-height: 40vh; /* Adjust scrollable height for smaller screens */
-                padding-right: 10px;
-                padding-left: 5px;
-            }
-            /* Adjust keyboard for smaller screens */
-            #custom-keyboard {
-                max-width: 100%;
-                padding: 8px;
-            }
-            .key-button {
-                min-width: 30px;
-                padding: 8px 10px;
-                font-size: 1em;
-                margin: 2px;
-            }
-            .key-button.special {
-                min-width: 50px;
-            }
-        }
-
-        @media (max-height: 500px) { /* For very short screens (e.g., landscape mobile) */
-            .screen-container {
-                padding: 10px;
-                margin: 5px;
-            }
-            h1 {
-                font-size: 1.8em;
-                margin-bottom: 10px;
-            }
-            h2 {
-                font-size: 1.4em;
-                margin-bottom: 5px;
-            }
-            p {
-                font-size: 0.9em;
-                margin-bottom: 10px;
-            }
-            .button {
-                font-size: 1em;
-                padding: 8px 15px;
-                margin-top: 15px;
-            }
-            .instructions-scrollable {
-                max-height: 25vh; /* Dramatically reduce scrollable area for very short screens */
-                margin-bottom: 10px;
-            }
-            .blink {
-                font-size: 1.2em;
-                margin-top: 20px;
-            }
-            /* Adjust keyboard for very short screens */
-            #custom-keyboard {
-                margin-top: 10px;
-                padding: 5px;
-            }
-            .key-button {
-                font-size: 0.9em;
-                padding: 6px 8px;
-                min-width: 25px;
-            }
-            .key-button.special {
-                min-width: 40px;
-            }
-        }
+        .keyboard-row { display: flex; justify-content: center; margin-bottom: 8px; }
+        .key-button { background-color: #050; color: #0F0; border: 1px solid #0F0; padding: 10px 12px; margin: 3px; font-size: 1.1em; cursor: pointer; border-radius: 4px; transition: background-color 0.2s, box-shadow 0.2s; min-width: 35px; text-align: center; box-sizing: border-box; text-shadow: 0 0 5px #0F0; }
+        .key-button:hover { background-color: #0A0; box-shadow: 0 0 10px #0F0; }
+        .key-button.special { min-width: 60px; background-color: #070; text-shadow: none; }
+        #congrats-screen .message-display { font-size: 1.8em; font-weight: bold; color: #FFF; text-shadow: 0 0 15px #FFF, 0 0 25px #0F0; margin: 20px 0; padding: 10px; border: 2px solid #0F0; border-radius: 5px; background-color: rgba(0, 0, 0, 0.5); }
+        #game-over-screen h1 { color: #F00; text-shadow: 0 0 10px #F00; }
+        #game-over-screen .miss-info { font-size: 1.2em; font-weight: bold; color: #F88; margin-top: 10px; }
+        .blink { animation: blinker 1.5s linear infinite; font-size: 1.5em; margin-top: 30px; text-shadow: 0 0 10px #0F0; }
+        @keyframes blinker { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
+    <!-- 1. The new intro splash screen (starts visible) -->
+    <div id="intro-splash-container">
+        <canvas id="intro-splash-canvas"></canvas>
+    </div>
+
+    <!-- 2. The original game elements (start hidden, then revealed by JS) -->
     <canvas id="matrixCanvas"></canvas>
 
-    <!-- NEW: Splash Screen -->
     <div id="splash-screen" class="screen-container">
         <h1>Code: Breaker</h1>
         <p>Welcome, Awakened One. The digital veil obscures the truth. Can you perceive the hidden messages within the flowing code?</p>
         <p class="blink">PRESS ANY KEY TO CONTINUE</p>
     </div>
 
-    <!-- RENAMED: from #main-menu to #how-to-play-menu. Removed redundant title/welcome message. -->
     <div id="how-to-play-menu" class="screen-container">
         <h2>How to Play:</h2>
-        <div class="instructions-scrollable"> <!-- NEW: Wrapper for scrollable content -->
-            <p>
-                The screen will be filled with a short,
-                <strong>cryptic conspiracy message.</strong>
-            </p>
-            <p>
-                Your mission: Observe the currently revealed glowing character (letter or number). You must select that character using the
-                <strong>on-screen keyboard before it falls below the top edge of the input area!</strong>
-                If you miss 'x' amount of times, the game ends.
-            </p>
-            <p>
-                Upon correct input, the next character will be revealed. Continue until the entire message is deciphered.
-            </p>
-            <p>
-                Decipher the conspiracy, and the AI will reveal a new truth in the next round!
-            </p>
-        </div> <!-- END: instructions-scrollable -->
+        <div class="instructions-scrollable">
+            <p>The screen will be filled with a short, <strong>cryptic conspiracy message.</strong></p>
+            <p>Your mission: Observe the currently revealed glowing character (letter or number). You must select that character using the <strong>on-screen keyboard before it falls below the top edge of the input area!</strong> If you miss 'x' amount of times, the game ends.</p>
+            <p>Upon correct input, the next character will be revealed. Continue until the entire message is deciphered.</p>
+            <p>Decipher the conspiracy, and the AI will reveal a new truth in the next round!</p>
+        </div>
         <button id="startGameButton" class="button">Uncover the Truth</button>
     </div>
 
-    <!-- Game Screen (no screen-container class) -->
     <div id="game-screen">
         <div id="input-section">
-            <!-- Removed the answer-input text box -->
             <p id="game-message"></p>
             <p class="miss-info" id="miss-display">Misses: 0/3</p>
         </div>
-
-        <!-- Custom On-Screen Keyboard for Mobile and Desktop -->
         <div id="custom-keyboard">
             <div class="keyboard-row">
-                <button class="key-button">1</button>
-                <button class="key-button">2</button>
-                <button class="key-button">3</button>
-                <button class="key-button">4</button>
-                <button class="key-button">5</button>
-                <button class="key-button">6</button>
-                <button class="key-button">7</button>
-                <button class="key-button">8</button>
-                <button class="key-button">9</button>
-                <button class="key-button">0</button>
+                <button class="key-button">1</button><button class="key-button">2</button><button class="key-button">3</button><button class="key-button">4</button><button class="key-button">5</button><button class="key-button">6</button><button class="key-button">7</button><button class="key-button">8</button><button class="key-button">9</button><button class="key-button">0</button>
             </div>
             <div class="keyboard-row">
-                <button class="key-button">Q</button>
-                <button class="key-button">W</button>
-                <button class="key-button">E</button>
-                <button class="key-button">R</button>
-                <button class="key-button">T</button>
-                <button class="key-button">Y</button>
-                <button class="key-button">U</button>
-                <button class="key-button">I</button>
-                <button class="key-button">O</button>
-                <button class="key-button">P</button>
+                <button class="key-button">Q</button><button class="key-button">W</button><button class="key-button">E</button><button class="key-button">R</button><button class="key-button">T</button><button class="key-button">Y</button><button class="key-button">U</button><button class="key-button">I</button><button class="key-button">O</button><button class="key-button">P</button>
             </div>
             <div class="keyboard-row">
-                <button class="key-button">A</button>
-                <button class="key-button">S</button>
-                <button class="key-button">D</button>
-                <button class="key-button">F</button>
-                <button class="key-button">G</button>
-                <button class="key-button">H</button>
-                <button class="key-button">J</button>
-                <button class="key-button">K</button>
-                <button class="key-button">L</button>
+                <button class="key-button">A</button><button class="key-button">S</button><button class="key-button">D</button><button class="key-button">F</button><button class="key-button">G</button><button class="key-button">H</button><button class="key-button">J</button><button class="key-button">K</button><button class="key-button">L</button>
             </div>
             <div class="keyboard-row">
-                <button class="key-button special" data-key="backspace">DEL</button>
-                <button class="key-button">Z</button>
-                <button class="key-button">X</button>
-                <button class="key-button">C</button>
-                <button class="key-button">V</button>
-                <button class="key-button">B</button>
-                <button class="key-button">N</button>
-                <button class="key-button">M</button>
-                <button class="key-button special" data-key="enter">ENTER</button>
+                <button class="key-button special" data-key="backspace">DEL</button><button class="key-button">Z</button><button class="key-button">X</button><button class="key-button">C</button><button class="key-button">V</button><button class="key-button">B</button><button class="key-button">N</button><button class="key-button">M</button><button class="key-button special" data-key="enter">ENTER</button>
             </div>
         </div>
     </div>
@@ -454,7 +264,6 @@
         <button id="nextRoundButton" class="button">Continue to Next Round</button>
     </div>
 
-    <!-- NEW: Game Over Screen -->
     <div id="game-over-screen" class="screen-container">
         <h1>GAME OVER!</h1>
         <p>The anomaly escaped detection.</p>
@@ -463,11 +272,12 @@
     </div>
 
     <script>
+        // Main game canvas for Matrix Rain
         const canvas = document.getElementById('matrixCanvas');
         const ctx = canvas.getContext('2d');
 
         // --- Screen Elements ---
-        const splashScreen = document.getElementById('splash-screen');
+        const splashScreen = document.getElementById('splash-screen'); // The text-based splash screen
         const howToPlayMenu = document.getElementById('how-to-play-menu');
         const gameScreen = document.getElementById('game-screen');
         const congratsScreen = document.getElementById('congrats-screen');
@@ -483,615 +293,137 @@
         const currentRoundDisplay = document.getElementById('current-round-display');
         const missDisplay = document.getElementById('miss-display');
         const finalMissCountDisplay = document.getElementById('final-miss-count');
-        const inputSection = document.getElementById('input-section'); // For calculating fail line
-        const customKeyboard = document.getElementById('custom-keyboard'); // Custom keyboard element
+        const inputSection = document.getElementById('input-section');
+        const customKeyboard = document.getElementById('custom-keyboard');
 
         // --- Matrix Rain Variables ---
         let streams = [];
         let font_size = 18;
         let columns;
         let numRows;
-        const charChangeProbability = 0.03; // Background character change probability
+        const charChangeProbability = 0.03;
 
-        // --- Seeded Random Number Generator (for unique puzzle sequences) ---
-        function cyrb128(str) {
-            let h1 = 1779033703 ^ str.length; let h2 = 3110515664 ^ str.length;
-            let h3 = 3456451341 ^ str.length; let h4 = 3301157367 ^ str.length;
-            for (let i = 0; i < str.length; i++) {
-                let k = str.charCodeAt(i);
-                h1 = (((h1 << 5) | (h1 >>> 27)) + k) | 0; h2 = (((h2 << 3) | (h2 >>> 29)) + k) | 0;
-                h3 = (((h3 << 3) | (h3 >>> 29)) + k) | 0; h4 = (((h4 << 3) | (h4 >>> 29)) + k) | 0;
-            }
-            h1 = h3 ^ (h1 >>> 16); h2 = h4 ^ (h2 >>> 16);
-            h3 = (h1 ^ (h3 >>> 13)) | 0; h4 = (h2 ^ (h4 >>> 13)) | 0;
-            return [h1 >>> 0, h2 >>> 0, h3 >>> 0, h4 >>> 0];
-        }
+        function cyrb128(str) { let h1=1779033703^str.length,h2=3110515664^str.length,h3=3456451341^str.length,h4=3301157367^str.length; for(let i=0,k;i<str.length;i++){k=str.charCodeAt(i);h1=h2^Math.imul(h1^k,597399067);h2=h3^Math.imul(h2^k,2869860233);h3=h4^Math.imul(h3^k,951274213);h4=h1^Math.imul(h4^k,2716044179);} h1=Math.imul(h3^h1>>>16,2246822507);h1=Math.imul(h2^h1>>>13,3266489909);h2=Math.imul(h4^h2>>>16,2246822507);h2=Math.imul(h3^h2>>>13,3266489909);h3=Math.imul(h1^h3>>>16,2246822507);h3=Math.imul(h4^h3>>>13,3266489909);h4=Math.imul(h2^h4>>>16,2246822507);h4=Math.imul(h1^h4>>>13,3266489909); return [(h1^h2^h3^h4)>>>0,(h2^h1)>>>0,(h3^h1)>>>0,(h4^h1)>>>0];}
+        function sfc32(a,b,c,d){return function(){a>>>=0;b>>>=0;c>>>=0;d>>>=0;let t=(a+b)|0;a=b^b>>>9;b=c+(c<<3)|0;c=(c<<21|c>>>11);d=d+1|0;t=t+d|0;c=c+t|0;return(t>>>0)/4294967296;}}
 
-        function sfc32(a, b, c, d) {
-            return function() {
-              a |= 0; b |= 0; c |= 0; d |= 0;
-              let t = (a + b) | 0;
-              a = b ^ (b >>> 9); b = (c + (c << 3)) | 0;
-              c = (c << 21) | (c >>> 11); d = (d + 1) | 0;
-              t = (t + d) | 0; c = (c + t) | 0;
-              return (t >>> 0) / 4294967296;
-            }
-        }
+        let playerSeed, seededRNG, allRoundsPuzzles, currentRound=0, currentPuzzle=null, revealedCharCount=0;
+        let currentGlowingCharObject=null, currentGlowingColumnIndex=-1;
+        const puzzleAdvanceDelayMs=1500, basePuzzles=[{message:"ELVIS LIVES",solution:"ELVIS LIVES"},{message:"PAUL IS DEAD",solution:"PAUL IS DEAD"},{message:"MARS HAS LIFE",solution:"MARS HAS LIFE"},{message:"ALIENS EXISTS",solution:"ALIENS EXISTS"},{message:"911 INSIDE JOB",solution:"9/11 INSIDE JOB"},{message:"TUPAC IS ALIVE",solution:"TUPAC IS ALIVE"},{message:"GHOSTS ARE REAL",solution:"GHOSTS ARE REAL"},{message:"AREA 51 SECRETS",solution:"AREA 51 SECRETS"},{message:"FAKE NEWS MEDIA",solution:"FAKE NEWS MEDIA"},{message:"NEW WORLD ORDER",solution:"NEW WORLD ORDER"},{message:"THE GREAT RESET",solution:"THE GREAT RESET"},{message:"NASA HIDES UFOS",solution:"NASA HIDES UFOS"},{message:"EARTH IS HOLLOW",solution:"EARTH IS HOLLOW"},{message:"BIGFOOT IS ALIVE",solution:"BIGFOOT IS ALIVE"},{message:"QANON IS THE WAY",solution:"QANON IS THE WAY"},{message:"WE ARE NOT ALONE",solution:"WE ARE NOT ALONE"},{message:"ROSWELL COVER UP",solution:"ROSWELL COVER UP"},{message:"THE VEIL OF ISIS",solution:"THE VEIL OF ISIS"},{message:"COVID WAS PLANNED",solution:"COVID WAS PLANNED"},{message:"WEREWOLVES EXIST",solution:"WEREWOLVES EXIST"},{message:"MERMAIDS ARE REAL",solution:"MERMAIDS ARE REAL"},{message:"THE EARTH IS FLAT",solution:"THE EARTH IS FLAT"},{message:"JFK ASSASSINATION",solution:"JFK ASSASSINATION"},{message:"MKULTRA IS ACTIVE",solution:"MKULTRA IS ACTIVE"},{message:"CHUPACABRA IS REAL",solution:"CHUPACABRA IS REAL"},{message:"JERSEY DEVIL LIVES",solution:"JERSEY DEVIL LIVES"},{message:"GIANTS ROAMED EARTH",solution:"GIANTS ROAMED EARTH"},{message:"BIRDS ARE NOT REAL",solution:"BIRDS ARE NOT REAL"},{message:"MOON LANDING HOAX",solution:"MOON LANDING HOAX"},{message:"PIZZA GATE IS TRUE",solution:"PIZZA GATE IS TRUE"},{message:"PROJECT BLUE BEAM",solution:"PROJECT BLUE BEAM"},{message:"THE SUN IS A PORTAL",solution:"THE SUN IS A PORTAL"},{message:"ELECTION WAS STOLEN",solution:"ELECTION WAS STOLEN"},{message:"FLAT EARTH SOCIETY",solution:"FLAT EARTH SOCIETY"},{message:"CURES ARE SUPPRESSED",solution:"CURES ARE SUPPRESSED"},{message:"CHEMTRAILS ARE REAL",solution:"CHEMTRAILS ARE REAL"},{message:"EMF CAUSES DISEASE",solution:"EMF CAUSES DISEASE"},{message:"CLONES ARE AMONG US",solution:"CLONES ARE AMONG US"},{message:"PRINCESS DIANA LIVES",solution:"PRINCESS DIANA LIVES"},{message:"LIZARD PEOPLE GOVERN",solution:"LIZARD PEOPLE GOVERN"},{message:"ANCIENT ALIENS TRUTH",solution:"ANCIENT ALIENS TRUTH"},{message:"JFK JR IS STILL ALIVE",solution:"JFK JR IS STILL ALIVE"},{message:"VACCINES ARE HARMFUL",solution:"VACCINES ARE HARMFUL"},{message:"ILLUMINATI CONFIRMED",solution:"ILLUMINATI CONFIRMED"},{message:"TITANIC WAS SWITCHED",solution:"TITANIC WAS SWITCHED"},{message:"AVRILLAVIGNE IS DEAD",solution:"AVRILLAVIGNE IS DEAD"},{message:"DISCLOSURE IS COMING",solution:"DISCLOSURE IS COMING"},{message:"CRAB PEOPLE ARE REAL",solution:"CRAB PEOPLE ARE REAL"},{message:"VAMPIRES ARE AMONG US",solution:"VAMPIRES ARE AMONG US"},{message:"FEMA CAMPS ARE READY",solution:"FEMA CAMPS ARE READY"},{message:"LINCOLN S DEATH PLOT",solution:"LINCOLN S DEATH PLOT"},{message:"FAKE MOON LANDINGS",solution:"FAKE MOON LANDINGS"},{message:"THEY ARE WATCHING YOU",solution:"THEY ARE WATCHING YOU"},{message:"THE ELITE EAT CHILDREN",solution:"THE ELITE EAT CHILDREN"},{message:"THE HOLOCAUST IS A HOAX",solution:"THE HOLOCAUST IS A HOAX"},{message:"NIBIRU IS APPROACHING",solution:"NIBIRU IS APPROACHING"},{message:"ADRENOCHROME HARVEST",solution:"ADRENOCHROME HARVEST"},{message:"FLU SHOTS ARE POISON",solution:"FLU SHOTS ARE POISON"},{message:"UFO CRASH AT ROSWELL",solution:"UFO CRASH AT ROSWELL"},{message:"SECRET SPACE PROGRAM",solution:"SECRET SPACE PROGRAM"},{message:"ASSASSINATION OF MLK",solution:"ASSASSINATION OF MLK"},{message:"SECRET SOCIETIES EXIST",solution:"SECRET SOCIETIES EXIST"},{message:"TARGETED INDIVIDUALS",solution:"TARGETED INDIVIDUALS"},{message:"WATERGATE WAS PLANNED",solution:"WATERGATE WAS PLANNED"},{message:"THE QUEEN IS A REPTILIAN",solution:"THE QUEEN IS A REPTILIAN"},{message:"MANDELA EFFECT IS PROOF",solution:"MANDELA EFFECT IS PROOF"},{message:"THE SIMULATION IS REAL",solution:"THE SIMULATION IS REAL"},{message:"GLOBAL WARMING FRAUD",solution:"GLOBAL WARMING FRAUD"},{message:"DEEP STATE IS WATCHING",solution:"DEEP STATE IS WATCHING"},{message:"HAARP WEATHER CONTROL",solution:"HAARP WEATHER CONTROL"},{message:"MIND CONTROL TECHNOLOGY",solution:"MIND CONTROL TECHNOLOGY"},{message:"FREE ENERGY SUPPRESSED",solution:"FREE ENERGY SUPPRESSED"},{message:"THE LOCH NESS MONSTER",solution:"THE LOCH NESS MONSTER"},{message:"ALIENS BUILT PYRAMIDS",solution:"ALIENS BUILT PYRAMIDS"},{message:"SATURN IS A SPACE STATION",solution:"SATURN IS A SPACE STATION"},{message:"CASSINI SENT FAKE DATA",solution:"CASSINI SENT FAKE DATA"},{message:"THE INTERNET IS SENTIENT",solution:"THE INTERNET IS SENTIENT"},{message:"BIG TECH IS TRACKING YOU",solution:"BIG TECH IS TRACKING YOU"},{message:"THE MEDIA LIES CONSTANTLY",solution:"THE MEDIA LIES CONSTANTLY"},{message:"CURE FOR CANCER HIDDEN",solution:"CURE FOR CANCER HIDDEN"},{message:"FDR PLANNED PEARL HARBOR",solution:"FDR PLANNED PEARL HARBOR"},{message:"REPTILIAN ELITE EXPOSED",solution:"REPTILIAN ELITE EXPOSED"},{message:"UNDERGROUND CITIES EXIST",solution:"UNDERGROUND CITIES EXIST"},{message:"YETI LURKS IN HIMALAYAS",solution:"YETI LURKS IN HIMALAYAS"},{message:"OBAMA WAS NOT BORN IN US",solution:"OBAMA WAS NOT BORN IN US"},{message:"WATER FLUORIDATION TOXIC",solution:"WATER FLUORIDATION TOXIC"},{message:"FLAT EARTH MAP IS REAL",solution:"FLAT EARTH MAP IS REAL"},{message:"PRINCE DIANA WAS MURDERED",solution:"PRINCE DIANA WAS MURDERED"},{message:"ALIEN ABDUCTIONS ARE REAL",solution:"ALIEN ABDUCTIONS ARE REAL"},{message:"VATICAN HAS ALIEN SECRETS",solution:"VATICAN HAS ALIEN SECRETS"},{message:"DEMONS IN OUR DIMENSION",solution:"DEMONS IN OUR DIMENSION"},{message:"SECRET GOVERNMENT BASES",solution:"SECRET GOVERNMENT BASES"},{message:"SECRET LABS MAKE VIRUSES",solution:"SECRET LABS MAKE VIRUSES"},{message:"GMO FOODS ARE DANGEROUS",solution:"GMO FOODS ARE DANGEROUS"},{message:"BIG PHARMA CONTROLS CURES",solution:"BIG PHARMA CONTROLS CURES"},{message:"THE US GOVERNMENT IS A LIE",solution:"THE US GOVERNMENT IS A LIE"},{message:"CHIP IMPLANTS ARE MANDATORY",solution:"CHIP IMPLANTS ARE MANDATORY"},{message:"MICROCHIPS IN VACCINES",solution:"MICROCHIPS IN VACCINES"},{message:"CELL TOWERS CAUSE ILLNESS",solution:"CELL TOWERS CAUSE ILLNESS"},{message:"NEIL ARMSTRONG SAW ALIENS",solution:"NEIL ARMSTRONG SAW ALIENS"},{message:"PLASTIC CAUSES INFERTILITY",solution:"PLASTIC CAUSES INFERTILITY"},{message:"GOVERNMENT CONTROLS WEATHER",solution:"GOVERNMENT CONTROLS WEATHER"},{message:"FEDERAL RESERVE IS A FRAUD",solution:"FEDERAL RESERVE IS A FRAUD"},{message:"THE HUMAN BODY IS A COMPUTER",solution:"THE HUMAN BODY IS A COMPUTER"},{message:"GLOBAL DEBT RESET IMMINENT",solution:"GLOBAL DEBT RESET IMMINENT"},{message:"GENDER IS A SOCIAL CONSTRUCT",solution:"GENDER IS A SOCIAL CONSTRUCT"},{message:"PEARL HARBOR FOREKNOWLEDGE",solution:"PEARL HARBOR FOREKNOWLEDGE"},{message:"ARTIFICIAL SWEETENERS DEADLY",solution:"ARTIFICIAL SWEETENERS DEADLY"},{message:"THE FBI KILLED MARILYN MONROE",solution:"THE FBI KILLED MARILYN MONROE"},{message:"SECRET SPACE PROGRAM DECEPTION",solution:"SECRET SPACE PROGRAM DECEPTION"}];
 
-        // NOTE: shuffleArray is no longer used for puzzles to meet the requirement, but kept for utility.
-        function shuffleArray(array, rng) {
-            let currentIndex = array.length, randomIndex;
-            while (currentIndex != 0) {
-                randomIndex = Math.floor(rng() * currentIndex);
-                currentIndex--;
-                [array[currentIndex], array[randomIndex]] = [
-                    array[randomIndex], array[currentIndex]];
-            }
-            return array;
-        }
+        let missCount=0,maxMisses=3,gameActive=!1,lastTypedChar="",failLineY=0;
 
-        let playerSeed;
-        let seededRNG;
-        let allRoundsPuzzles;
-
-        // --- Game Variables ---
-        // Puzzles are now strictly ordered by length to ensure each round gets progressively longer.
-        const basePuzzles = [
-            { message: "ELVIS LIVES", solution: "ELVIS LIVES" },
-            { message: "PAUL IS DEAD", solution: "PAUL IS DEAD" },
-            { message: "MARS HAS LIFE", solution: "MARS HAS LIFE" },
-            { message: "NESSIE EXISTS", solution: "NESSIE EXISTS" },
-            { message: "911 INSIDE JOB", solution: "911 INSIDE JOB" },
-            { message: "TUPAC IS ALIVE", solution: "TUPAC IS ALIVE" },
-            { message: "GHOSTS ARE REAL", solution: "GHOSTS ARE REAL" },
-            { message: "AREA 51 SECRETS", solution: "AREA 51 SECRETS" },
-            { message: "FAKE NEWS MEDIA", solution: "FAKE NEWS MEDIA" },
-            { message: "NEW WORLD ORDER", solution: "NEW WORLD ORDER" },
-            { message: "THE GREAT RESET", solution: "THE GREAT RESET" },
-            { message: "NASA HIDES UFOS", solution: "NASA HIDES UFOS" },
-            { message: "EARTH IS HOLLOW", solution: "EARTH IS HOLLOW" },
-            { message: "BIGFOOT IS ALIVE", solution: "BIGFOOT IS ALIVE" },
-            { message: "QANON IS THE WAY", solution: "QANON IS THE WAY" },
-            { message: "WE ARE NOT ALONE", solution: "WE ARE NOT ALONE" },
-            { message: "ROSWELL COVER UP", solution: "ROSWELL COVER UP" },
-            { message: "THE VEIL OF ISIS", solution: "THE VEIL OF ISIS" },
-            { message: "COVID WAS PLANNED", solution: "COVID WAS PLANNED" },
-            { message: "WEREWOLVES EXIST", solution: "WEREWOLVES EXIST" },
-            { message: "MERMAIDS ARE REAL", solution: "MERMAIDS ARE REAL" },
-            { message: "THE EARTH IS FLAT", solution: "THE EARTH IS FLAT" },
-            { message: "JFK ASSASSINATION", solution: "JFK ASSASSINATION" },
-            { message: "MKULTRA IS ACTIVE", solution: "MKULTRA IS ACTIVE" },
-            { message: "CHUPACABRA IS REAL", solution: "CHUPACABRA IS REAL" },
-            { message: "JERSEY DEVIL LIVES", solution: "JERSEY DEVIL LIVES" },
-            { message: "GIANTS ROAMED EARTH", solution: "GIANTS ROAMED EARTH" },
-            { message: "BIRDS ARE NOT REAL", solution: "BIRDS ARE NOT REAL" },
-            { message: "MOON LANDING HOAX", solution: "MOON LANDING HOAX" },
-            { message: "PIZZA GATE IS TRUE", solution: "PIZZA GATE IS TRUE" },
-            { message: "PROJECT BLUE BEAM", solution: "PROJECT BLUE BEAM" },
-            { message: "THE SUN IS A PORTAL", solution: "THE SUN IS A PORTAL" },
-            { message: "ELECTION WAS STOLEN", solution: "ELECTION WAS STOLEN" },
-            { message: "FLAT EARTH SOCIETY", solution: "FLAT EARTH SOCIETY" },
-            { message: "CURES ARE SUPPRESSED", solution: "CURES ARE SUPPRESSED" },
-            { message: "CHEMTRAILS ARE REAL", solution: "CHEMTRAILS ARE REAL" },
-            { message: "EMF CAUSES DISEASE", solution: "EMF CAUSES DISEASE" },
-            { message: "CLONES ARE AMONG US", solution: "CLONES ARE AMONG US" },
-            { message: "PRINCESS DIANA LIVES", solution: "PRINCESS DIANA LIVES" },
-            { message: "LIZARD PEOPLE GOVERN", solution: "LIZARD PEOPLE GOVERN" },
-            { message: "ANCIENT ALIENS TRUTH", solution: "ANCIENT ALIENS TRUTH" },
-            { message: "JFK JR IS STILL ALIVE", solution: "JFK JR IS STILL ALIVE" },
-            { message: "VACCINES ARE HARMFUL", solution: "VACCINES ARE HARMFUL" },
-            { message: "ILLUMINATI CONFIRMED", solution: "ILLUMINATI CONFIRMED" },
-            { message: "TITANIC WAS SWITCHED", solution: "TITANIC WAS SWITCHED" },
-            { message: "AVRILLAVIGNE IS DEAD", solution: "AVRILLAVIGNE IS DEAD" },
-            { message: "DISCLOSURE IS COMING", solution: "DISCLOSURE IS COMING" },
-            { message: "CRAB PEOPLE ARE REAL", solution: "CRAB PEOPLE ARE REAL" },
-            { message: "VAMPIRES ARE AMONG US", solution: "VAMPIRES ARE AMONG US" },
-            { message: "FEMA CAMPS ARE READY", solution: "FEMA CAMPS ARE READY" },
-            { message: "LINCOLN S DEATH PLOT", solution: "LINCOLN S DEATH PLOT" },
-            { message: "FAKE MOON LANDINGS", solution: "FAKE MOON LANDINGS" },
-            { message: "THEY ARE WATCHING YOU", solution: "THEY ARE WATCHING YOU" },
-            { message: "THE ELITE EAT CHILDREN", solution: "THE ELITE EAT CHILDREN" },
-            { message: "THE HOLOCAUST IS A HOAX", solution: "THE HOLOCAUST IS A HOAX" },
-            { message: "NIBIRU IS APPROACHING", solution: "NIBIRU IS APPROACHING" },
-            { message: "ADRENOCHROME HARVEST", solution: "ADRENOCHROME HARVEST" },
-            { message: "FLU SHOTS ARE POISON", solution: "FLU SHOTS ARE POISON" },
-            { message: "UFO CRASH AT ROSWELL", solution: "UFO CRASH AT ROSWELL" },
-            { message: "SECRET SPACE PROGRAM", solution: "SECRET SPACE PROGRAM" },
-            { message: "ASSASSINATION OF MLK", solution: "ASSASSINATION OF MLK" },
-            { message: "SECRET SOCIETIES EXIST", solution: "SECRET SOCIETIES EXIST" },
-            { message: "TARGETED INDIVIDUALS", solution: "TARGETED INDIVIDUALS" },
-            { message: "WATERGATE WAS PLANNED", solution: "WATERGATE WAS PLANNED" },
-            { message: "THE QUEEN IS A REPTILIAN", solution: "THE QUEEN IS A REPTILIAN" },
-            { message: "MANDELA EFFECT IS PROOF", solution: "MANDELA EFFECT IS PROOF" },
-            { message: "THE SIMULATION IS REAL", solution: "THE SIMULATION IS REAL" },
-            { message: "GLOBAL WARMING FRAUD", solution: "GLOBAL WARMING FRAUD" },
-            { message: "DEEP STATE IS WATCHING", solution: "DEEP STATE IS WATCHING" },
-            { message: "HAARP WEATHER CONTROL", solution: "HAARP WEATHER CONTROL" },
-            { message: "MIND CONTROL TECHNOLOGY", solution: "MIND CONTROL TECHNOLOGY" },
-            { message: "FREE ENERGY SUPPRESSED", solution: "FREE ENERGY SUPPRESSED" },
-            { message: "THE LOCH NESS MONSTER", solution: "THE LOCH NESS MONSTER" },
-            { message: "ALIENS BUILT PYRAMIDS", solution: "ALIENS BUILT PYRAMIDS" },
-            { message: "SATURN IS A SPACE STATION", solution: "SATURN IS A SPACE STATION" },
-            { message: "CASSINI SENT FAKE DATA", solution: "CASSINI SENT FAKE DATA" },
-            { message: "THE INTERNET IS SENTIENT", solution: "THE INTERNET IS SENTIENT" },
-            { message: "BIG TECH IS TRACKING YOU", solution: "BIG TECH IS TRACKING YOU" },
-            { message: "THE MEDIA LIES CONSTANTLY", solution: "THE MEDIA LIES CONSTANTLY" },
-            { message: "CURE FOR CANCER HIDDEN", solution: "CURE FOR CANCER HIDDEN" },
-            { message: "FDR PLANNED PEARL HARBOR", solution: "FDR PLANNED PEARL HARBOR" },
-            { message: "REPTILIAN ELITE EXPOSED", solution: "REPTILIAN ELITE EXPOSED" },
-            { message: "UNDERGROUND CITIES EXIST", solution: "UNDERGROUND CITIES EXIST" },
-            { message: "YETI LURKS IN HIMALAYAS", solution: "YETI LURKS IN HIMALAYAS" },
-            { message: "OBAMA WAS NOT BORN IN US", solution: "OBAMA WAS NOT BORN IN US" },
-            { message: "WATER FLUORIDATION TOXIC", solution: "WATER FLUORIDATION TOXIC" },
-            { message: "FLAT EARTH MAP IS REAL", solution: "FLAT EARTH MAP IS REAL" },
-            { message: "PRINCE DIANA WAS MURDERED", solution: "PRINCE DIANA WAS MURDERED" },
-            { message: "ALIEN ABDUCTIONS ARE REAL", solution: "ALIEN ABDUCTIONS ARE REAL" },
-            { message: "VATICAN HAS ALIEN SECRETS", solution: "VATICAN HAS ALIEN SECRETS" },
-            { message: "DEMONS IN OUR DIMENSION", solution: "DEMONS IN OUR DIMENSION" },
-            { message: "SECRET GOVERNMENT BASES", solution: "SECRET GOVERNMENT BASES" },
-            { message: "SECRET LABS MAKE VIRUSES", solution: "SECRET LABS MAKE VIRUSES" },
-            { message: "GMO FOODS ARE DANGEROUS", solution: "GMO FOODS ARE DANGEROUS" },
-            { message: "BIG PHARMA CONTROLS CURES", solution: "BIG PHARMA CONTROLS CURES" },
-            { message: "THE US GOVERNMENT IS A LIE", solution: "THE US GOVERNMENT IS A LIE" },
-            { message: "CHIP IMPLANTS ARE MANDATORY", solution: "CHIP IMPLANTS ARE MANDATORY" },
-            { message: "MICROCHIPS IN VACCINES", solution: "MICROCHIPS IN VACCINES" },
-            { message: "CELL TOWERS CAUSE ILLNESS", solution: "CELL TOWERS CAUSE ILLNESS" },
-            { message: "NEIL ARMSTRONG SAW ALIENS", solution: "NEIL ARMSTRONG SAW ALIENS" },
-            { message: "PLASTIC CAUSES INFERTILITY", solution: "PLASTIC CAUSES INFERTILITY" },
-            { message: "GOVERNMENT CONTROLS WEATHER", solution: "GOVERNMENT CONTROLS WEATHER" },
-            { message: "FEDERAL RESERVE IS A FRAUD", solution: "FEDERAL RESERVE IS A FRAUD" },
-            { message: "THE HUMAN BODY IS A COMPUTER", solution: "THE HUMAN BODY IS A COMPUTER" },
-            { message: "GLOBAL DEBT RESET IMMINENT", solution: "GLOBAL DEBT RESET IMMINENT" },
-            { message: "GENDER IS A SOCIAL CONSTRUCT", solution: "GENDER IS A SOCIAL CONSTRUCT" },
-            { message: "PEARL HARBOR FOREKNOWLEDGE", solution: "PEARL HARBOR FOREKNOWLEDGE" },
-            { message: "ARTIFICIAL SWEETENERS DEADLY", solution: "ARTIFICIAL SWEETENERS DEADLY" },
-            { message: "THE FBI KILLED MARILYN MONROE", solution: "THE FBI KILLED MARILYN MONROE" },
-            { message: "SECRET SPACE PROGRAM DECEPTION", solution: "SECRET SPACE PROGRAM DECEPTION" }
-        ];
-
-        let currentRound = 0;
-        let currentPuzzle = null;
-        let revealedCharCount = 0;
-
-        // --- Global state for the single active glowing message character ---
-        let currentGlowingCharObject = null; // Reference to the actual {char, isGlowing, missed} object
-        let currentGlowingColumnIndex = -1; // The column this glowing object is in
-
-        const puzzleAdvanceDelayMs = 1500; // Delay before next letter appears after correct input/space skip
-
-        // --- Game State Variables ---
-        let missCount = 0;
-        let maxMisses = 3; // Will be calculated dynamically based on puzzle length
-        let gameActive = false; // Flag to control game logic (miss detection, input)
-        let lastTypedChar = ''; // Stores the last character pressed on the custom keyboard
-
-        // --- Fail Line for Miss Detection ---
-        let failLineY = 0; // Will be calculated dynamically
-
-        // --- Utility Functions ---
-        function createRandomCharObject() {
-            // Include numbers for random background characters as well
-            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            return { char: chars.charAt(Math.floor(seededRNG() * chars.length)), isGlowing: false, missed: false };
-        }
-
-        function initializePlayerPuzzleSequence() {
-            playerSeed = localStorage.getItem('matrixPlayerSeed');
-            if (!playerSeed) {
-                playerSeed = Date.now().toString() + Math.random().toString() + Math.random().toString();
-                localStorage.setItem('matrixPlayerSeed', playerSeed);
-            }
-
-            const seedArray = cyrb128(playerSeed);
-            seededRNG = sfc32(seedArray[0], seedArray[1], seedArray[2], seedArray[3]);
-
-            allRoundsPuzzles = [...basePuzzles];
-        }
-
-        // --- Matrix Rain Functions ---
-        function initializeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-
-            const inputSectionRect = inputSection.getBoundingClientRect();
-            failLineY = inputSectionRect.top; 
-
-            columns = Math.floor(canvas.width / font_size);
-            numRows = Math.ceil(canvas.height / font_size);
-
-            streams = [];
-            for (let i = 0; i < columns; i++) {
-                const initialChars = Array.from({length: numRows + 10}, () => createRandomCharObject());
-                streams[i] = {
-                    x: i * font_size,
-                    chars: initialChars,
-                    speed: Math.floor(seededRNG() * (12 - 6) + 6), 
-                    frameCounter: Math.floor(seededRNG() * 10),
-                    headY: -Math.floor(seededRNG() * initialChars.length) * font_size 
-                };
-            }
-
-            ctx.fillStyle = "#000";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-
-        function drawMatrixRain() {
-            ctx.fillStyle = "rgba(0, 0, 0, 0.1)"; // Fading effect for trails
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.font = font_size + "px monospace";
-
-            for (let i = 0; i < streams.length; i++) {
-                let stream = streams[i];
-                const colX = stream.x;
-
-                stream.frameCounter++;
-                if (stream.frameCounter >= stream.speed) {
-                    stream.headY += font_size;
-                    if (stream.headY >= canvas.height) {
-                        stream.headY = -Math.floor(seededRNG() * stream.chars.length) * font_size;
-                    }
-                    stream.frameCounter = 0;
-                }
-
-                for (let j = 0; j < stream.chars.length; j++) {
-                    const charY = stream.headY + j * font_size;
-
-                    if (charY > -font_size && charY < canvas.height + font_size) {
-                        let charObj = stream.chars[j];
-                        
-                        if (!charObj.isGlowing && seededRNG() < charChangeProbability) {
-                            charObj.char = createRandomCharObject().char;
-                        }
-
-                        if (charObj.isGlowing && gameActive && !charObj.missed) {
-                            if (charY + font_size > failLineY) {
-                                charObj.missed = true;
-                                charObj.isGlowing = false;
-                                charObj.char = createRandomCharObject().char;
-
-                                missCount++;
-                                missDisplay.textContent = `Misses: ${missCount}/${maxMisses}`;
-                                gameMessage.textContent = `MISSED! ${missCount}/${maxMisses} misses.`;
-                                gameMessage.style.color = "#F00";
-                                gameMessage.style.textShadow = "0 0 8px #F00";
-
-                                if (missCount >= maxMisses) {
-                                    gameOver();
-                                } else {
-                                    setTimeout(() => {
-                                        gameMessage.textContent = "Finding next anomaly...";
-                                        showNextMessageChar();
-                                    }, puzzleAdvanceDelayMs);
-                                }
-                            }
-                        }
-
-                        // --- SIMPLIFIED CHARACTER RENDERING ---
-                        // Set default style for regular green rain
-                        let charOpacity = 1.0 - ((j * font_size) / (stream.chars.length * font_size) * 0.95);
-                        if(charOpacity < 0.1) charOpacity = 0.1;
-                        ctx.fillStyle = `rgba(0, 255, 0, ${charOpacity})`;
-                        
-                        // OVERRIDE for the target character with a solid, bright color. NO GLOW.
-                        if (charObj.isGlowing) {
-                            ctx.fillStyle = "#E0BBE4"; // A bright, clear lavender color
-                        }
-                        
-                        ctx.fillText(charObj.char, colX, charY);
-                    }
-                }
-            }
-            requestAnimationFrame(drawMatrixRain);
-        }
+        function createRandomCharObject(){const e="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";return{char:e.charAt(Math.floor(seededRNG()*e.length)),isGlowing:!1,missed:!1}}
+        function initializePlayerPuzzleSequence(){playerSeed=localStorage.getItem("matrixPlayerSeed"),playerSeed||(playerSeed=Date.now().toString()+Math.random().toString()+Math.random().toString(),localStorage.setItem("matrixPlayerSeed",playerSeed));const e=cyrb128(playerSeed);seededRNG=sfc32(e[0],e[1],e[2],e[3]),allRoundsPuzzles=[...basePuzzles]}
+        function initializeCanvas(){canvas.width=window.innerWidth,canvas.height=window.innerHeight;const e=inputSection.getBoundingClientRect();failLineY=e.top,columns=Math.floor(canvas.width/font_size),numRows=Math.ceil(canvas.height/font_size),streams=[];for(let t=0;t<columns;t++){const n=Array.from({length:numRows+10},()=>createRandomCharObject());streams[t]={x:t*font_size,chars:n,speed:Math.floor(seededRNG()*6+6),frameCounter:Math.floor(seededRNG()*10),headY:-Math.floor(seededRNG()*n.length)*font_size}}ctx.fillStyle="#000",ctx.fillRect(0,0,canvas.width,canvas.height)}
+        function drawMatrixRain(){ctx.fillStyle="rgba(0, 0, 0, 0.1)",ctx.fillRect(0,0,canvas.width,canvas.height),ctx.font=font_size+"px monospace";for(let e=0;e<streams.length;e++){let t=streams[e];const n=t.x;if(t.frameCounter++,t.frameCounter>=t.speed){if(t.headY+=font_size,t.headY>=canvas.height)t.headY=-Math.floor(seededRNG()*t.chars.length)*font_size;t.frameCounter=0}for(let o=0;o<t.chars.length;o++){const a=t.headY+o*font_size;if(a>-font_size&&a<canvas.height+font_size){let s=t.chars[o];if(!s.isGlowing&&seededRNG()<charChangeProbability&&(s.char=createRandomCharObject().char),s.isGlowing&&gameActive&&!s.missed&&a+font_size>failLineY){s.missed=!0,s.isGlowing=!1,s.char=createRandomCharObject().char,missCount++,missDisplay.textContent=`Misses: ${missCount}/${maxMisses}`,gameMessage.textContent=`MISSED! ${missCount}/${maxMisses} misses.`,gameMessage.style.color="#F00",gameMessage.style.textShadow="0 0 8px #F00";if(missCount>=maxMisses)gameOver();else{setTimeout(()=>{gameMessage.textContent="Finding next anomaly...",showNextMessageChar()},puzzleAdvanceDelayMs)}}let r=1-(o*font_size/(t.chars.length*font_size)*.95);r<.1&&(r=.1),ctx.fillStyle=`rgba(0, 255, 0, ${r})`,s.isGlowing&&(ctx.fillStyle="#E0BBE4"),ctx.fillText(s.char,n,a)}}}requestAnimationFrame(drawMatrixRain)}
+        function transitionToScreen(e,t,n){let o=null;for(const s of allScreens)if(s.classList.contains("screen-visible")){o=s;break}o&&o!==e?(o.classList.remove("screen-visible"),o.classList.add("screen-hidden"),o.addEventListener("transitionend",function s(){o.removeEventListener("transitionend",s),o.style.display="none",e.style.display="flex",e.offsetWidth,e.classList.remove("screen-hidden"),e.classList.add("screen-visible"),t&&t(),e.addEventListener("transitionend",function r(){e.removeEventListener("transitionend",r),n&&n()},{once:!0})},{once:!0})):!o&&e===splashScreen?(t&&t(),n&&n()):o===e&&n&&n()}
+        function displayScreen(e){let t;e==="splash-screen"?t=splashScreen:e==="how-to-play-menu"?t=howToPlayMenu:e==="game-screen"?t=gameScreen:e==="congrats-screen"?t=congratsScreen:e==="game-over-screen"&&(t=gameOverScreen),transitionToScreen(t,()=>{},()=>{e==="game-screen"?showCustomKeyboard():hideCustomKeyboard()})}
+        function loadRound(){let e=localStorage.getItem("matrixCurrentRound");currentRound=e?parseInt(e):0,currentRound>=allRoundsPuzzles.length&&(currentRound=0)}
+        function saveRound(){localStorage.setItem("matrixCurrentRound",currentRound)}
+        function startGame(){loadRound(),missCount=0,revealedCharCount=0,currentGlowingCharObject=null,currentGlowingColumnIndex=-1,gameActive=!0,currentPuzzle=allRoundsPuzzles[currentRound];const e=currentPuzzle.message.replace(/ /g,"").length;maxMisses=Math.max(3,Math.ceil(e/4)),missDisplay.textContent=`Misses: ${missCount}/${maxMisses}`,currentRoundDisplay.textContent=currentRound+1,gameMessage.textContent="",lastTypedChar="",setTimeout(()=>{gameMessage.textContent="",showNextMessageChar()},puzzleAdvanceDelayMs)}
+        function showNextMessageChar(){if(currentGlowingCharObject&&(currentGlowingCharObject.isGlowing=!1,currentGlowingCharObject.char=createRandomCharObject().char,currentGlowingCharObject.missed=!1,currentGlowingCharObject=null,currentGlowingColumnIndex=-1),revealedCharCount<currentPuzzle.message.length){const e=currentPuzzle.message[revealedCharCount];if(" "===e)return gameMessage.textContent="Space detected! Finding next anomaly...",gameMessage.style.color="#0F0",gameMessage.style.textShadow="0 0 8px #0F0",revealedCharCount++,void setTimeout(()=>showNextMessageChar(),puzzleAdvanceDelayMs);currentGlowingColumnIndex=Math.floor(seededRNG()*columns),streams[currentGlowingColumnIndex]&&streams[currentGlowingColumnIndex].chars.length>0?(streams[currentGlowingColumnIndex].headY=0,streams[currentGlowingColumnIndex].frameCounter=0,currentGlowingCharObject=streams[currentGlowingColumnIndex].chars[0],currentGlowingCharObject.char=e,currentGlowingCharObject.isGlowing=!0,currentGlowingCharObject.missed=!1):console.error("Could not find stream to inject glowing char! Columns:",columns),gameMessage.textContent="",gameMessage.textContent=""}else puzzleSolved()}
+        function checkAnswer(){const e=lastTypedChar.trim().toUpperCase();if(lastTypedChar="",!gameActive||!currentGlowingCharObject||" "===currentGlowingCharObject.char||currentGlowingCharObject.missed)return gameMessage.textContent="Waiting for a character or already handled.",gameMessage.style.color="#F00",void(gameMessage.style.textShadow="0 0 8px #F00");const t=currentGlowingCharObject.char;e===t?(gameMessage.textContent="Correct! Finding next anomaly...",gameMessage.style.color="#0F0",gameMessage.style.textShadow="0 0 8px #0F0",currentGlowingCharObject.isGlowing=!1,currentGlowingCharObject.char=createRandomCharObject().char,currentGlowingCharObject.missed=!1,currentGlowingCharObject=null,currentGlowingColumnIndex=-1,revealedCharCount++,setTimeout(()=>{showNextMessageChar()},puzzleAdvanceDelayMs)):(gameMessage.textContent="INCORRECT. Select the correct character.",gameMessage.style.color="#F00",gameMessage.style.textShadow="0 0 8px #F00")}
+        function puzzleSolved(){gameActive=!1,gameMessage.textContent="Message uncovered!",gameMessage.style.color="#0F0",gameMessage.style.textShadow="0 0 8px #0F0",revealedMessageDisplay.textContent=currentPuzzle.solution,currentRound++,saveRound(),currentRoundDisplay.textContent=currentRound+1,setTimeout(()=>{displayScreen("congrats-screen")},1e3)}
+        function gameOver(){gameActive=!1,gameMessage.textContent="GAME OVER!",gameMessage.style.color="#F00",gameMessage.style.textShadow="0 0 8px #F00",finalMissCountDisplay.textContent=missCount,currentGlowingCharObject&&(currentGlowingCharObject.isGlowing=!1,currentGlowingCharObject.char=createRandomCharObject().char,currentGlowingCharObject.missed=!1),currentGlowingCharObject=null,currentGlowingColumnIndex=-1,setTimeout(()=>{displayScreen("game-over-screen")},1e3)}
+        function showCustomKeyboard(){customKeyboard.style.display="flex"}function hideCustomKeyboard(){customKeyboard.style.display="none"}
+        window.addEventListener("resize",initializeCanvas);let splashActive=!0;
+        function handleSplashInteraction(){splashActive&&(document.removeEventListener("keydown",handleSplashInteraction),document.removeEventListener("click",handleSplashInteraction),splashActive=!1,displayScreen("how-to-play-menu"))}
+        startGameButton.addEventListener("click",()=>{startGame(),displayScreen("game-screen")}),nextRoundButton.addEventListener("click",()=>{startGame(),displayScreen("game-screen")}),playAgainButton.addEventListener("click",()=>{localStorage.setItem("matrixCurrentRound",0),startGame(),displayScreen("game-screen")}),customKeyboard.querySelectorAll(".key-button").forEach(e=>{e.addEventListener("click",t=>{t.preventDefault();if(!gameActive)return;const n=e.textContent.trim().toUpperCase();"DEL"===n||"ENTER"===n||(lastTypedChar=n,checkAnswer())})}),document.addEventListener("keydown",e=>{if(!gameActive)return;const t=e.key.toUpperCase();1===t.length&&/[A-Z0-9]/.test(t)&&(lastTypedChar=t,checkAnswer())});
         
-        // --- Screen Transition Logic ---
-        function transitionToScreen(targetScreenElement, startCallback, endCallback) {
-            let currentActiveScreen = null;
-            for (const screen of allScreens) {
-                if (screen.classList.contains('screen-visible')) {
-                    currentActiveScreen = screen;
-                    break;
-                }
-            }
-            
-            if (currentActiveScreen && currentActiveScreen !== targetScreenElement) {
-                currentActiveScreen.classList.remove('screen-visible');
-                currentActiveScreen.classList.add('screen-hidden');
-
-                currentActiveScreen.addEventListener('transitionend', function handler() {
-                    currentActiveScreen.removeEventListener('transitionend', handler);
-                    currentActiveScreen.style.display = 'none';
-
-                    targetScreenElement.style.display = 'flex';
-                    targetScreenElement.offsetWidth; // Force a reflow
-                    targetScreenElement.classList.remove('screen-hidden');
-                    targetScreenElement.classList.add('screen-visible');
-
-                    if (startCallback) startCallback();
-
-                    targetScreenElement.addEventListener('transitionend', function handler2() {
-                        targetScreenElement.removeEventListener('transitionend', handler2);
-                        if (endCallback) endCallback();
-                    }, { once: true });
-                }, { once: true });
-            } else if (!currentActiveScreen && targetScreenElement === splashScreen) { 
-                if (startCallback) startCallback();
-                if (endCallback) endCallback();
-            } else if (currentActiveScreen === targetScreenElement) { 
-                 if (endCallback) endCallback();
-            }
-        }
-
-        // Main function to initiate screen display/transition
-        function displayScreen(screenId) {
-            let targetElement;
-            if (screenId === 'splash-screen') targetElement = splashScreen;
-            else if (screenId === 'how-to-play-menu') targetElement = howToPlayMenu;
-            else if (screenId === 'game-screen') targetElement = gameScreen;
-            else if (screenId === 'congrats-screen') targetElement = congratsScreen;
-            else if (screenId === 'game-over-screen') targetElement = gameOverScreen;
-
-            transitionToScreen(targetElement, 
-                () => {}, 
-                () => {
-                    if (screenId === 'game-screen') {
-                        showCustomKeyboard(); // Show keyboard when game screen is active
-                    } else {
-                        hideCustomKeyboard(); // Hide keyboard on other screens
-                    }
-                }
-            );
-        }
-
-        // --- Game Logic Functions ---
-        function loadRound() {
-            let storedRound = localStorage.getItem('matrixCurrentRound');
-            currentRound = storedRound ? parseInt(storedRound) : 0;
-            if (currentRound >= allRoundsPuzzles.length) {
-                currentRound = 0; 
-            }
-        }
-
-        function saveRound() {
-            localStorage.setItem('matrixCurrentRound', currentRound);
-        }
-
-        function startGame() {
-            loadRound();
-            missCount = 0;
-            revealedCharCount = 0;
-            currentGlowingCharObject = null;
-            currentGlowingColumnIndex = -1;
-            gameActive = true;
-            currentPuzzle = allRoundsPuzzles[currentRound];
-
-            const numLettersAndNumbersToType = currentPuzzle.message.replace(/ /g, '').length;
-            maxMisses = Math.max(3, Math.ceil(numLettersAndNumbersToType / 4));
-            missDisplay.textContent = `Misses: ${missCount}/${maxMisses}`;
-
-            currentRoundDisplay.textContent = currentRound + 1;
-
-            gameMessage.textContent = "";
-            lastTypedChar = '';
-            
-            setTimeout(() => {
-                gameMessage.textContent = ""; 
-                showNextMessageChar();
-            }, puzzleAdvanceDelayMs); 
-        }
-
-        function showNextMessageChar() {
-            if (currentGlowingCharObject) {
-                currentGlowingCharObject.isGlowing = false;
-                currentGlowingCharObject.char = createRandomCharObject().char;
-                currentGlowingCharObject.missed = false;
-                currentGlowingCharObject = null;
-                currentGlowingColumnIndex = -1;
-            }
-
-            if (revealedCharCount < currentPuzzle.message.length) {
-                const charToReveal = currentPuzzle.message[revealedCharCount];
-                
-                if (charToReveal === ' ') {
-                    gameMessage.textContent = "Space detected! Finding next anomaly...";
-                    gameMessage.style.color = "#0F0";
-                    gameMessage.style.textShadow = "0 0 8px #0F0";
-                    revealedCharCount++;
-                    setTimeout(() => showNextMessageChar(), puzzleAdvanceDelayMs);
-                    return;
-                }
-                
-                currentGlowingColumnIndex = Math.floor(seededRNG() * columns);
-                
-                if (streams[currentGlowingColumnIndex] && streams[currentGlowingColumnIndex].chars.length > 0) {
-                    const stream = streams[currentGlowingColumnIndex];
-                    
-                    stream.headY = 0; 
-                    stream.frameCounter = 0;
-                    
-                    currentGlowingCharObject = stream.chars[0];
-                    currentGlowingCharObject.char = charToReveal;
-                    currentGlowingCharObject.isGlowing = true;
-                    currentGlowingCharObject.missed = false;
-                } else {
-                    console.error("Could not find stream to inject glowing char! Columns:", columns);
-                    gameMessage.textContent = "Error: Puzzle could not start. Try resizing.";
-                    gameMessage.style.color = "#F00";
-                }
-                
-                gameMessage.textContent = "";
-            } else {
-                puzzleSolved();
-            }
-        }
-
-        function checkAnswer() {
-            const userAnswer = lastTypedChar.trim().toUpperCase();
-            lastTypedChar = '';
-
-            if (!gameActive || !currentGlowingCharObject || currentGlowingCharObject.char === ' ' || currentGlowingCharObject.missed) {
-                gameMessage.textContent = "Waiting for a character or already handled.";
-                gameMessage.style.color = "#F00";
-                gameMessage.style.textShadow = "0 0 8px #F00";
-                return;
-            }
-
-            const expectedChar = currentGlowingCharObject.char;
-
-            if (userAnswer === expectedChar) {
-                gameMessage.textContent = "Correct! Finding next anomaly...";
-                gameMessage.style.color = "#0F0";
-                gameMessage.style.textShadow = "0 0 8px #0F0";
-                
-                currentGlowingCharObject.isGlowing = false;
-                currentGlowingCharObject.char = createRandomCharObject().char;
-                currentGlowingCharObject.missed = false;
-                currentGlowingCharObject = null;
-                currentGlowingColumnIndex = -1;
-
-                revealedCharCount++;
-                
-                setTimeout(() => {
-                    showNextMessageChar();
-                }, puzzleAdvanceDelayMs); 
-
-            } else {
-                gameMessage.textContent = `INCORRECT. Select the correct character.`;
-                gameMessage.style.color = "#F00";
-                gameMessage.style.textShadow = "0 0 8px #F00";
-            }
-        }
-
-        function puzzleSolved() {
-            gameActive = false;
-            gameMessage.textContent = "Message uncovered!";
-            gameMessage.style.color = "#0F0";
-            gameMessage.style.textShadow = "0 0 8px #0F0";
-
-            revealedMessageDisplay.textContent = currentPuzzle.solution;
-            currentRound++;
-            saveRound();
-            currentRoundDisplay.textContent = currentRound + 1;
-
-            setTimeout(() => {
-                displayScreen('congrats-screen');
-            }, 1000);
-        }
-
-        function gameOver() {
-            gameActive = false;
-            gameMessage.textContent = "GAME OVER!";
-            gameMessage.style.color = "#F00";
-            gameMessage.style.textShadow = "0 0 8px #F00";
-
-            finalMissCountDisplay.textContent = missCount;
-            
-            if (currentGlowingCharObject) {
-                currentGlowingCharObject.isGlowing = false;
-                currentGlowingCharObject.char = createRandomCharObject().char;
-                currentGlowingCharObject.missed = false;
-            }
-            currentGlowingCharObject = null;
-            currentGlowingColumnIndex = -1;
-
-            setTimeout(() => {
-                displayScreen('game-over-screen');
-            }, 1000);
-        }
-
-        // --- Custom Keyboard Logic ---
-        function showCustomKeyboard() {
-            customKeyboard.style.display = 'flex';
-        }
-
-        function hideCustomKeyboard() {
-            customKeyboard.style.display = 'none';
-        }
-
-        // --- Event Listeners ---
-        window.addEventListener('resize', initializeCanvas); 
-        
-        let splashActive = true;
-        function handleSplashInteraction() {
-            if (splashActive) {
-                document.removeEventListener('keydown', handleSplashInteraction);
-                document.removeEventListener('click', handleSplashInteraction);
-                splashActive = false;
-                displayScreen('how-to-play-menu');
-            }
-        }
-
-        startGameButton.addEventListener('click', () => {
-            startGame();
-            displayScreen('game-screen');
-        });
-
-        nextRoundButton.addEventListener('click', () => {
-            startGame();
-            displayScreen('game-screen');
-        });
-
-        playAgainButton.addEventListener('click', () => {
-            localStorage.setItem('matrixCurrentRound', 0); 
-            startGame();
-            displayScreen('game-screen');
-        });
-        
-        customKeyboard.querySelectorAll('.key-button').forEach(button => {
-            button.addEventListener('click', (event) => {
-                event.preventDefault(); 
-
-                if (!gameActive) return;
-
-                const key = button.textContent.trim().toUpperCase();
-
-                if (key === 'DEL' || key === 'ENTER') {
-                    // Ignore these special keys for now
-                } else {
-                    lastTypedChar = key;
-                    checkAnswer(); 
-                }
-            });
-        });
-
-        document.addEventListener('keydown', (event) => {
-            if (!gameActive) return;
-
-            const key = event.key.toUpperCase();
-
-            if (key.length === 1 && (/[A-Z0-9]/).test(key)) { 
-                lastTypedChar = key;
-                checkAnswer();
-            }
-        });
-
-
-        // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
-            initializePlayerPuzzleSequence();
-            initializeCanvas();
+            // --- INTRO SPLASH SCREEN LOGIC ---
+            const introSplashContainer = document.getElementById('intro-splash-container');
+            const introSplashCanvas = document.getElementById('intro-splash-canvas');
+            const introCtx = introSplashCanvas.getContext('2d');
 
-            missDisplay.textContent = `Misses: 0/3`; 
+            const RENDER_WIDTH = 1280, RENDER_HEIGHT = 720;
+            const SPLASH_FADE_TIME = 1.5, SPLASH_HOLD_TIME = 2.0;
+            
+            let lastIntroTime = 0, dt = 0, splashPhase = 'fade-in', splashTimer = 0, splashOpacity = 0;
+            let introAnimationId = null;
 
-            loadRound();
-            currentRoundDisplay.textContent = currentRound + 1; 
+            const splashImage = new Image();
+            let splashImageLoaded = false;
+            splashImage.src = 'https://nerdrealm419.github.io/Go-Go-Monkey-Go-v1/splash-screen.png';
+            splashImage.onload = () => { splashImageLoaded = true; };
 
-            allScreens.forEach(screen => {
-                screen.classList.add('screen-transition');
-                if (screen === splashScreen) {
-                    screen.classList.add('screen-visible');
-                    screen.style.display = 'flex';
-                } else {
-                    screen.classList.add('screen-hidden');
-                    screen.style.display = 'none';
+            function startMainGame() {
+                if (introAnimationId) cancelAnimationFrame(introAnimationId);
+                introSplashContainer.style.display = 'none';
+                
+                // Initialize and start the main game logic
+                initializePlayerPuzzleSequence();
+                initializeCanvas(); // Setup Matrix Rain
+                missDisplay.textContent = `Misses: 0/3`;
+                loadRound();
+                currentRoundDisplay.textContent = currentRound + 1;
+
+                allScreens.forEach(screen => {
+                    screen.classList.add('screen-transition');
+                    if (screen === splashScreen) { // This is the GAME's text splash screen
+                        screen.classList.add('screen-visible');
+                        screen.style.display = 'flex';
+                    } else {
+                        screen.classList.add('screen-hidden');
+                        screen.style.display = 'none';
+                    }
+                });
+
+                document.addEventListener('keydown', handleSplashInteraction);
+                document.addEventListener('click', handleSplashInteraction);
+                drawMatrixRain(); // Start Matrix Rain animation
+            }
+
+            function updateSplashScreen(dt) {
+                splashTimer += dt;
+                switch (splashPhase) {
+                    case 'fade-in':
+                        splashOpacity = Math.min(1.0, splashTimer / SPLASH_FADE_TIME);
+                        if (splashTimer >= SPLASH_FADE_TIME) { splashPhase = 'hold'; splashTimer = 0; }
+                        break;
+                    case 'hold':
+                        if (splashTimer >= SPLASH_HOLD_TIME) { splashPhase = 'fade-out'; splashTimer = 0; }
+                        break;
+                    case 'fade-out':
+                        splashOpacity = Math.max(0.0, 1.0 - (splashTimer / SPLASH_FADE_TIME));
+                        if (splashTimer >= SPLASH_FADE_TIME) {
+                            splashPhase = 'done';
+                            startMainGame();
+                        }
+                        break;
+                    case 'done': return;
                 }
-            });
+            }
 
-            document.addEventListener('keydown', handleSplashInteraction);
-            document.addEventListener('click', handleSplashInteraction);
+            function renderSplashScreen() {
+                introCtx.fillStyle = '#000';
+                introCtx.fillRect(0, 0, introSplashCanvas.width, introSplashCanvas.height);
+                if (splashImageLoaded) {
+                    introCtx.globalAlpha = splashOpacity;
+                    const aspect = splashImage.width / splashImage.height;
+                    let drawW = introSplashCanvas.width * 0.9, drawH = drawW / aspect;
+                    if (drawH > introSplashCanvas.height * 0.9) { drawH = introSplashCanvas.height * 0.9; drawW = drawH * aspect; }
+                    introCtx.drawImage(splashImage, (introSplashCanvas.width - drawW) / 2, (introSplashCanvas.height - drawH) / 2, drawW, drawH);
+                    introCtx.globalAlpha = 1.0;
+                }
+            }
 
-            drawMatrixRain();
+            function resizeIntroCanvas() {
+                introSplashCanvas.width = RENDER_WIDTH;
+                introSplashCanvas.height = RENDER_HEIGHT;
+            }
+
+            function introLoop(timestamp) {
+                dt = (timestamp - lastIntroTime) / 1000;
+                lastIntroTime = timestamp;
+                updateSplashScreen(dt);
+                renderSplashScreen();
+                introAnimationId = requestAnimationFrame(introLoop);
+            }
+
+            resizeIntroCanvas();
+            lastIntroTime = performance.now();
+            requestAnimationFrame(introLoop);
         });
     </script>
 </body>
