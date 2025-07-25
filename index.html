@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matrix Conspiracy AI</title>
+    <title>Code: Breaker</title>
     <style>
         body {
             margin: 0;
@@ -17,7 +17,6 @@
             align-items: center;
             min-height: 100vh; /* Ensure body takes full viewport height */
         }
-
         canvas {
             display: block;
             position: fixed;
@@ -25,7 +24,6 @@
             left: 0;
             z-index: -1; /* Send canvas to the background */
         }
-
         /* --- Common screen container styles --- */
         .screen-container {
             position: relative;
@@ -46,7 +44,6 @@
             color: #0F0; /* Text color for screens */
             box-sizing: border-box; /* Include padding and border in the element's total width */
         }
-
         /* --- Fading Animation for ALL Screens --- */
         .screen-transition {
             transition: opacity 1s ease-in-out;
@@ -66,31 +63,28 @@
         }
         #how-to-play-menu,
         #game-screen,
-        #congrats-screen {
+        #congrats-screen,
+        #game-over-screen {
             display: none; /* Hidden by default, will be changed to 'flex' by JS for visible states */
         }
-
         h1 {
             color: #0F0;
             text-shadow: 0 0 10px #0F0;
             margin-bottom: 15px;
             font-size: 2.5em; /* Larger title */
         }
-
         h2 {
             color: #0F0;
             text-shadow: 0 0 8px #0F0;
             margin-bottom: 10px;
             font-size: 1.8em;
         }
-
         p {
             margin-bottom: 15px;
             font-size: 1.1em;
             line-height: 1.5;
             color: #0F0;
         }
-
         /* Specific style for scrollable instructions */
         .instructions-scrollable {
             max-height: 50vh; /* Max height of 50% of viewport height for scroll */
@@ -154,6 +148,7 @@
             min-width: unset; /* Remove min-width */
             min-height: unset; /* Remove min-height */
             display: flex; /* Use flex to align its child (#input-section) */
+            flex-direction: column; /* Stack input and keyboard vertically */
             justify-content: center; /* Center horizontally */
             align-items: center; /* Center vertically */
             width: 100%; /* Take full width to center effectively */
@@ -171,28 +166,7 @@
             box-sizing: border-box; /* Include padding/border in max-width */
         }
 
-        #answer-input {
-            width: 320px; /* Fixed width for the input box */
-            max-width: 100%; /* Allow shrinking on smaller screens */
-            padding: 12px;
-            background-color: #001; /* Very dark blue/black */
-            border: 2px solid #0F0; /* Bright green border */
-            color: #0F0; /* Bright green text */
-            font-size: 1.2em;
-            border-radius: 5px;
-            box-sizing: border-box; /* Include padding and border in the element's total width */
-            outline: none; /* Remove default focus outline */
-            text-align: center;
-            text-shadow: 0 0 5px #0F0; /* Subtle glow on input text */
-        }
-
-        #answer-input::placeholder {
-            color: #0A0; /* Slightly darker green for placeholder */
-        }
-
-        #answer-input:focus {
-            box-shadow: 0 0 10px #0F0; /* Stronger glow on focus */
-        }
+        /* Removed #answer-input styles as the element is gone */
 
         #game-message {
             min-height: 1.5em; /* Reserve space to prevent layout shifts */
@@ -201,6 +175,52 @@
             margin-top: 10px; /* Space between input and message */
             font-size: 1.1em;
             white-space: nowrap; /* Prevent message from wrapping (important for "Space detected...") */
+        }
+
+        /* Custom Keyboard Styles */
+        #custom-keyboard {
+            background-color: rgba(0, 0, 0, 0.8); /* Darker, slightly opaque background */
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+            margin-top: 15px; /* Space between input section and keyboard */
+            max-width: 90%;
+            display: flex; /* Changed from 'none' to 'flex' as it's always shown now */
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 8px; /* Space between rows */
+        }
+
+        .key-button {
+            background-color: #050; /* Dark green */
+            color: #0F0; /* Bright green text */
+            border: 1px solid #0F0;
+            padding: 10px 12px;
+            margin: 3px;
+            font-size: 1.1em;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            min-width: 35px; /* Ensure buttons are wide enough */
+            text-align: center;
+            box-sizing: border-box;
+            text-shadow: 0 0 5px #0F0;
+        }
+
+        .key-button:hover {
+            background-color: #0A0;
+            box-shadow: 0 0 10px #0F0;
+        }
+        
+        .key-button.special {
+            min-width: 60px; /* Wider for Enter/Backspace */
+            background-color: #070;
+            text-shadow: none; /* No shadow for special keys text */
         }
 
         /* Congratulations Screen */
@@ -217,6 +237,21 @@
             border: 2px solid #0F0;
             border-radius: 5px;
             background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        /* Game Over Screen (similar to congrats) */
+        #game-over-screen {
+            /* Visibility managed by JS */
+        }
+        #game-over-screen h1 {
+            color: #F00; /* Red for game over */
+            text-shadow: 0 0 10px #F00;
+        }
+        #game-over-screen .miss-info {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #F88; /* Lighter red */
+            margin-top: 10px;
         }
 
         /* Blink effect for "Press Any Key" */
@@ -251,14 +286,25 @@
                 margin: 10px; /* Reduce margin */
                 max-width: 95%; /* Allow it to take up more screen width */
             }
-            #answer-input {
-                width: 280px; /* Smaller input width for mobile */
-                font-size: 1em;
-            }
+            /* Removed #answer-input adjustments */
             .instructions-scrollable {
                 max-height: 40vh; /* Adjust scrollable height for smaller screens */
                 padding-right: 10px;
                 padding-left: 5px;
+            }
+            /* Adjust keyboard for smaller screens */
+            #custom-keyboard {
+                max-width: 100%;
+                padding: 8px;
+            }
+            .key-button {
+                min-width: 30px;
+                padding: 8px 10px;
+                font-size: 1em;
+                margin: 2px;
+            }
+            .key-button.special {
+                min-width: 50px;
             }
         }
 
@@ -292,6 +338,19 @@
                 font-size: 1.2em;
                 margin-top: 20px;
             }
+            /* Adjust keyboard for very short screens */
+            #custom-keyboard {
+                margin-top: 10px;
+                padding: 5px;
+            }
+            .key-button {
+                font-size: 0.9em;
+                padding: 6px 8px;
+                min-width: 25px;
+            }
+            .key-button.special {
+                min-width: 40px;
+            }
         }
     </style>
 </head>
@@ -300,7 +359,7 @@
 
     <!-- NEW: Splash Screen -->
     <div id="splash-screen" class="screen-container">
-        <h1>Matrix Riddle: Conspiracy AI</h1>
+        <h1>Code: Breaker</h1>
         <p>Welcome, Awakened One. The digital veil obscures the truth. Can you perceive the hidden messages within the flowing code?</p>
         <p class="blink">PRESS ANY KEY TO CONTINUE</p>
     </div>
@@ -310,17 +369,19 @@
         <h2>How to Play:</h2>
         <div class="instructions-scrollable"> <!-- NEW: Wrapper for scrollable content -->
             <p>
-                The screen will be filled with classic Matrix rain (A-Z alphabet). A short,
-                <strong>cryptic conspiracy message</strong> will appear,
-                <strong>letter by letter</strong>, in a single, glowing character that falls
-                within one of the green streams.
+                The screen will be filled with a short,
+                <strong>cryptic conspiracy message.</strong>
             </p>
             <p>
-                Observe the currently revealed glowing letter. Type *only* that letter into the box and hit ENTER.
-                Upon correct input, the next letter will be revealed in a new falling stream. Continue until the entire message is deciphered.
+                Your mission: Observe the currently revealed glowing character (letter or number). You must select that character using the
+                <strong>on-screen keyboard before it falls below the top edge of the input area!</strong>
+                If you miss 'x' amount of times, the game ends.
             </p>
             <p>
-                Decipher the conspiracy, and the "AI" will reveal a new truth in the next round!
+                Upon correct input, the next character will be revealed. Continue until the entire message is deciphered.
+            </p>
+            <p>
+                Decipher the conspiracy, and the AI will reveal a new truth in the next round!
             </p>
         </div> <!-- END: instructions-scrollable -->
         <button id="startGameButton" class="button">Uncover the Truth</button>
@@ -329,8 +390,59 @@
     <!-- Game Screen (no screen-container class) -->
     <div id="game-screen">
         <div id="input-section">
-            <input type="text" id="answer-input" placeholder="Type the revealed letter..." autocomplete="off" maxlength="1">
+            <!-- Removed the answer-input text box -->
             <p id="game-message"></p>
+            <p class="miss-info" id="miss-display">Misses: 0/3</p>
+        </div>
+
+        <!-- Custom On-Screen Keyboard for Mobile and Desktop -->
+        <div id="custom-keyboard">
+            <div class="keyboard-row">
+                <button class="key-button">1</button>
+                <button class="key-button">2</button>
+                <button class="key-button">3</button>
+                <button class="key-button">4</button>
+                <button class="key-button">5</button>
+                <button class="key-button">6</button>
+                <button class="key-button">7</button>
+                <button class="key-button">8</button>
+                <button class="key-button">9</button>
+                <button class="key-button">0</button>
+            </div>
+            <div class="keyboard-row">
+                <button class="key-button">Q</button>
+                <button class="key-button">W</button>
+                <button class="key-button">E</button>
+                <button class="key-button">R</button>
+                <button class="key-button">T</button>
+                <button class="key-button">Y</button>
+                <button class="key-button">U</button>
+                <button class="key-button">I</button>
+                <button class="key-button">O</button>
+                <button class="key-button">P</button>
+            </div>
+            <div class="keyboard-row">
+                <button class="key-button">A</button>
+                <button class="key-button">S</button>
+                <button class="key-button">D</button>
+                <button class="key-button">F</button>
+                <button class="key-button">G</button>
+                <button class="key-button">H</button>
+                <button class="key-button">J</button>
+                <button class="key-button">K</button>
+                <button class="key-button">L</button>
+            </div>
+            <div class="keyboard-row">
+                <button class="key-button special" data-key="backspace">DEL</button>
+                <button class="key-button">Z</button>
+                <button class="key-button">X</button>
+                <button class="key-button">C</button>
+                <button class="key-button">V</button>
+                <button class="key-button">B</button>
+                <button class="key-button">N</button>
+                <button class="key-button">M</button>
+                <button class="key-button special" data-key="enter">ENTER</button>
+            </div>
         </div>
     </div>
 
@@ -342,54 +454,56 @@
         <button id="nextRoundButton" class="button">Continue to Next Round</button>
     </div>
 
+    <!-- NEW: Game Over Screen -->
+    <div id="game-over-screen" class="screen-container">
+        <h1>GAME OVER!</h1>
+        <p>The anomaly escaped detection.</p>
+        <p class="miss-info">Total Misses: <span id="final-miss-count"></span></p>
+        <button id="playAgainButton" class="button">Play Again</button>
+    </div>
+
     <script>
         const canvas = document.getElementById('matrixCanvas');
         const ctx = canvas.getContext('2d');
 
-        // --- NEW: Screen Elements ---
+        // --- Screen Elements ---
         const splashScreen = document.getElementById('splash-screen');
-        const howToPlayMenu = document.getElementById('how-to-play-menu'); // Renamed from mainMenu
+        const howToPlayMenu = document.getElementById('how-to-play-menu');
         const gameScreen = document.getElementById('game-screen');
         const congratsScreen = document.getElementById('congrats-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const allScreens = [splashScreen, howToPlayMenu, gameScreen, congratsScreen, gameOverScreen];
 
-        // All screen elements for easy iteration
-        const allScreens = [splashScreen, howToPlayMenu, gameScreen, congratsScreen];
-
-        // --- Existing UI Elements ---
+        // --- UI Elements ---
         const startGameButton = document.getElementById('startGameButton');
         const nextRoundButton = document.getElementById('nextRoundButton');
-        const answerInput = document.getElementById('answer-input');
+        const playAgainButton = document.getElementById('playAgainButton');
         const gameMessage = document.getElementById('game-message');
         const revealedMessageDisplay = document.getElementById('revealed-message');
         const currentRoundDisplay = document.getElementById('current-round-display');
+        const missDisplay = document.getElementById('miss-display');
+        const finalMissCountDisplay = document.getElementById('final-miss-count');
+        const inputSection = document.getElementById('input-section'); // For calculating fail line
+        const customKeyboard = document.getElementById('custom-keyboard'); // Custom keyboard element
 
         // --- Matrix Rain Variables ---
-        let streams = []; // Each element is a stream (column) of characters
+        let streams = [];
         let font_size = 18;
         let columns;
-        let numRows; // Calculated based on canvas height and font size
-        const charChangeProbability = 0.03; // Slightly reduced for less visual noise
+        let numRows;
+        const charChangeProbability = 0.03; // Background character change probability
 
         // --- Seeded Random Number Generator (for unique puzzle sequences) ---
         function cyrb128(str) {
-            let h1 = 1779033703 ^ str.length;
-            let h2 = 3110515664 ^ str.length;
-            let h3 = 3456451341 ^ str.length;
-            let h4 = 3301157367 ^ str.length;
-
+            let h1 = 1779033703 ^ str.length; let h2 = 3110515664 ^ str.length;
+            let h3 = 3456451341 ^ str.length; let h4 = 3301157367 ^ str.length;
             for (let i = 0; i < str.length; i++) {
                 let k = str.charCodeAt(i);
-                h1 = (((h1 << 5) | (h1 >>> 27)) + k) | 0;
-                h2 = (((h2 << 3) | (h2 >>> 29)) + k) | 0;
-                h3 = (((h3 << 3) | (h3 >>> 29)) + k) | 0;
-                h4 = (((h4 << 3) | (h4 >>> 29)) + k) | 0;
+                h1 = (((h1 << 5) | (h1 >>> 27)) + k) | 0; h2 = (((h2 << 3) | (h2 >>> 29)) + k) | 0;
+                h3 = (((h3 << 3) | (h3 >>> 29)) + k) | 0; h4 = (((h4 << 3) | (h4 >>> 29)) + k) | 0;
             }
-
-            h1 = h3 ^ (h1 >>> 16);
-            h2 = h4 ^ (h2 >>> 16);
-            h3 = (h1 ^ (h3 >>> 13)) | 0;
-            h4 = (h2 ^ (h4 >>> 13)) | 0;
-
+            h1 = h3 ^ (h1 >>> 16); h2 = h4 ^ (h2 >>> 16);
+            h3 = (h1 ^ (h3 >>> 13)) | 0; h4 = (h2 ^ (h4 >>> 13)) | 0;
             return [h1 >>> 0, h2 >>> 0, h3 >>> 0, h4 >>> 0];
         }
 
@@ -397,16 +511,14 @@
             return function() {
               a |= 0; b |= 0; c |= 0; d |= 0;
               let t = (a + b) | 0;
-              a = b ^ (b >>> 9);
-              b = (c + (c << 3)) | 0;
-              c = (c << 21) | (c >>> 11);
-              d = (d + 1) | 0;
-              t = (t + d) | 0;
-              c = (c + t) | 0;
+              a = b ^ (b >>> 9); b = (c + (c << 3)) | 0;
+              c = (c << 21) | (c >>> 11); d = (d + 1) | 0;
+              t = (t + d) | 0; c = (c + t) | 0;
               return (t >>> 0) / 4294967296;
             }
         }
 
+        // NOTE: shuffleArray is no longer used for puzzles to meet the requirement, but kept for utility.
         function shuffleArray(array, rng) {
             let currentIndex = array.length, randomIndex;
             while (currentIndex != 0) {
@@ -423,52 +535,144 @@
         let allRoundsPuzzles;
 
         // --- Game Variables ---
+        // Puzzles are now strictly ordered by length to ensure each round gets progressively longer.
         const basePuzzles = [
-            { message: "THE EARTH IS FLAT", solution: "THE EARTH IS FLAT" },
-            { message: "MOON LANDING HOAX", solution: "MOON LANDING HOAX" },
+            { message: "ELVIS LIVES", solution: "ELVIS LIVES" },
+            { message: "PAUL IS DEAD", solution: "PAUL IS DEAD" },
+            { message: "MARS HAS LIFE", solution: "MARS HAS LIFE" },
+            { message: "NESSIE EXISTS", solution: "NESSIE EXISTS" },
+            { message: "911 INSIDE JOB", solution: "911 INSIDE JOB" },
+            { message: "TUPAC IS ALIVE", solution: "TUPAC IS ALIVE" },
+            { message: "GHOSTS ARE REAL", solution: "GHOSTS ARE REAL" },
             { message: "AREA 51 SECRETS", solution: "AREA 51 SECRETS" },
             { message: "FAKE NEWS MEDIA", solution: "FAKE NEWS MEDIA" },
-            { message: "ILLUMINATI CONFIRMED", solution: "ILLUMINATI CONFIRMED" },
-            { message: "CHEMTRAILS ARE REAL", solution: "CHEMTRAILS ARE REAL" },
-            { message: "BIRDS ARE NOT REAL", solution: "BIRDS ARE NOT REAL" },
-            { message: "BIGFOOT IS ALIVE", solution: "BIGFOOT IS ALIVE" },
-            { message: "ELVIS LIVES", solution: "ELVIS LIVES" },
-            { message: "VACCINES ARE HARMFUL", solution: "VACCINES ARE HARMFUL" },
-            { message: "LIZARD PEOPLE GOVERN", solution: "LIZARD PEOPLE GOVERN" },
-            { message: "JFK ASSASSINATION", solution: "JFK ASSASSINATION" },
-            { message: "9 11 INSIDE JOB", solution: "9 11 INSIDE JOB" },
-            { message: "ADRENOCHROME HARVEST", solution: "ADRENOCHROME HARVEST" },
-            { message: "CRAB PEOPLE ARE REAL", solution: "CRAB PEOPLE ARE REAL" },
-            { message: "GLOBAL WARMING FRAUD", solution: "GLOBAL WARMING FRAUD" },
-            { message: "WATERGATE WAS PLANNED", solution: "WATERGATE WAS PLANNED" },
-            { message: "NESSIE EXISTS", solution: "NESSIE EXISTS" },
-            { message: "FEMA CAMPS ARE READY", solution: "FEMA CAMPS ARE READY" },
-            { message: "ALIENS BUILT PYRAMIDS", solution: "ALIENS BUILT PYRAMIDS" },
-            { message: "CURE FOR CANCER HIDDEN", solution: "CURE FOR CANCER HIDDEN" },
-            { message: "HAARP WEATHER CONTROL", solution: "HAARP WEATHER CONTROL" },
-            { message: "ANCIENT ALIENS TRUTH", solution: "ANCIENT ALIENS TRUTH" },
-            { message: "FLAT EARTH SOCIETY", solution: "FLAT EARTH SOCIETY" },
-            { message: "THE SIMULATION IS REAL", solution: "THE SIMULATION IS REAL" },
-            { message: "MKULTRA IS ACTIVE", solution: "MKULTRA IS ACTIVE" },
-            { message: "DEEP STATE IS WATCHING", solution: "DEEP STATE IS WATCHING" },
-            { message: "QANON IS THE WAY", solution: "QANON IS THE WAY" },
             { message: "NEW WORLD ORDER", solution: "NEW WORLD ORDER" },
             { message: "THE GREAT RESET", solution: "THE GREAT RESET" },
+            { message: "NASA HIDES UFOS", solution: "NASA HIDES UFOS" },
+            { message: "EARTH IS HOLLOW", solution: "EARTH IS HOLLOW" },
+            { message: "BIGFOOT IS ALIVE", solution: "BIGFOOT IS ALIVE" },
+            { message: "QANON IS THE WAY", solution: "QANON IS THE WAY" },
+            { message: "WE ARE NOT ALONE", solution: "WE ARE NOT ALONE" },
+            { message: "ROSWELL COVER UP", solution: "ROSWELL COVER UP" },
+            { message: "THE VEIL OF ISIS", solution: "THE VEIL OF ISIS" },
+            { message: "COVID WAS PLANNED", solution: "COVID WAS PLANNED" },
+            { message: "WEREWOLVES EXIST", solution: "WEREWOLVES EXIST" },
+            { message: "MERMAIDS ARE REAL", solution: "MERMAIDS ARE REAL" },
+            { message: "THE EARTH IS FLAT", solution: "THE EARTH IS FLAT" },
+            { message: "JFK ASSASSINATION", solution: "JFK ASSASSINATION" },
+            { message: "MKULTRA IS ACTIVE", solution: "MKULTRA IS ACTIVE" },
+            { message: "CHUPACABRA IS REAL", solution: "CHUPACABRA IS REAL" },
+            { message: "JERSEY DEVIL LIVES", solution: "JERSEY DEVIL LIVES" },
+            { message: "GIANTS ROAMED EARTH", solution: "GIANTS ROAMED EARTH" },
+            { message: "BIRDS ARE NOT REAL", solution: "BIRDS ARE NOT REAL" },
+            { message: "MOON LANDING HOAX", solution: "MOON LANDING HOAX" },
+            { message: "PIZZA GATE IS TRUE", solution: "PIZZA GATE IS TRUE" },
+            { message: "PROJECT BLUE BEAM", solution: "PROJECT BLUE BEAM" },
+            { message: "THE SUN IS A PORTAL", solution: "THE SUN IS A PORTAL" },
+            { message: "ELECTION WAS STOLEN", solution: "ELECTION WAS STOLEN" },
+            { message: "FLAT EARTH SOCIETY", solution: "FLAT EARTH SOCIETY" },
+            { message: "CURES ARE SUPPRESSED", solution: "CURES ARE SUPPRESSED" },
+            { message: "CHEMTRAILS ARE REAL", solution: "CHEMTRAILS ARE REAL" },
+            { message: "EMF CAUSES DISEASE", solution: "EMF CAUSES DISEASE" },
+            { message: "CLONES ARE AMONG US", solution: "CLONES ARE AMONG US" },
+            { message: "PRINCESS DIANA LIVES", solution: "PRINCESS DIANA LIVES" },
+            { message: "LIZARD PEOPLE GOVERN", solution: "LIZARD PEOPLE GOVERN" },
+            { message: "ANCIENT ALIENS TRUTH", solution: "ANCIENT ALIENS TRUTH" },
+            { message: "JFK JR IS STILL ALIVE", solution: "JFK JR IS STILL ALIVE" },
+            { message: "VACCINES ARE HARMFUL", solution: "VACCINES ARE HARMFUL" },
+            { message: "ILLUMINATI CONFIRMED", solution: "ILLUMINATI CONFIRMED" },
+            { message: "TITANIC WAS SWITCHED", solution: "TITANIC WAS SWITCHED" },
+            { message: "AVRILLAVIGNE IS DEAD", solution: "AVRILLAVIGNE IS DEAD" },
+            { message: "DISCLOSURE IS COMING", solution: "DISCLOSURE IS COMING" },
+            { message: "CRAB PEOPLE ARE REAL", solution: "CRAB PEOPLE ARE REAL" },
+            { message: "VAMPIRES ARE AMONG US", solution: "VAMPIRES ARE AMONG US" },
+            { message: "FEMA CAMPS ARE READY", solution: "FEMA CAMPS ARE READY" },
+            { message: "LINCOLN S DEATH PLOT", solution: "LINCOLN S DEATH PLOT" },
+            { message: "FAKE MOON LANDINGS", solution: "FAKE MOON LANDINGS" },
+            { message: "THEY ARE WATCHING YOU", solution: "THEY ARE WATCHING YOU" },
+            { message: "THE ELITE EAT CHILDREN", solution: "THE ELITE EAT CHILDREN" },
+            { message: "THE HOLOCAUST IS A HOAX", solution: "THE HOLOCAUST IS A HOAX" },
+            { message: "NIBIRU IS APPROACHING", solution: "NIBIRU IS APPROACHING" },
+            { message: "ADRENOCHROME HARVEST", solution: "ADRENOCHROME HARVEST" },
+            { message: "FLU SHOTS ARE POISON", solution: "FLU SHOTS ARE POISON" },
+            { message: "UFO CRASH AT ROSWELL", solution: "UFO CRASH AT ROSWELL" },
+            { message: "SECRET SPACE PROGRAM", solution: "SECRET SPACE PROGRAM" },
+            { message: "ASSASSINATION OF MLK", solution: "ASSASSINATION OF MLK" },
+            { message: "SECRET SOCIETIES EXIST", solution: "SECRET SOCIETIES EXIST" },
+            { message: "TARGETED INDIVIDUALS", solution: "TARGETED INDIVIDUALS" },
+            { message: "WATERGATE WAS PLANNED", solution: "WATERGATE WAS PLANNED" },
+            { message: "THE QUEEN IS A REPTILIAN", solution: "THE QUEEN IS A REPTILIAN" },
+            { message: "MANDELA EFFECT IS PROOF", solution: "MANDELA EFFECT IS PROOF" },
+            { message: "THE SIMULATION IS REAL", solution: "THE SIMULATION IS REAL" },
+            { message: "GLOBAL WARMING FRAUD", solution: "GLOBAL WARMING FRAUD" },
+            { message: "DEEP STATE IS WATCHING", solution: "DEEP STATE IS WATCHING" },
+            { message: "HAARP WEATHER CONTROL", solution: "HAARP WEATHER CONTROL" },
+            { message: "MIND CONTROL TECHNOLOGY", solution: "MIND CONTROL TECHNOLOGY" },
+            { message: "FREE ENERGY SUPPRESSED", solution: "FREE ENERGY SUPPRESSED" },
+            { message: "THE LOCH NESS MONSTER", solution: "THE LOCH NESS MONSTER" },
+            { message: "ALIENS BUILT PYRAMIDS", solution: "ALIENS BUILT PYRAMIDS" },
+            { message: "SATURN IS A SPACE STATION", solution: "SATURN IS A SPACE STATION" },
+            { message: "CASSINI SENT FAKE DATA", solution: "CASSINI SENT FAKE DATA" },
+            { message: "THE INTERNET IS SENTIENT", solution: "THE INTERNET IS SENTIENT" },
+            { message: "BIG TECH IS TRACKING YOU", solution: "BIG TECH IS TRACKING YOU" },
+            { message: "THE MEDIA LIES CONSTANTLY", solution: "THE MEDIA LIES CONSTANTLY" },
+            { message: "CURE FOR CANCER HIDDEN", solution: "CURE FOR CANCER HIDDEN" },
+            { message: "FDR PLANNED PEARL HARBOR", solution: "FDR PLANNED PEARL HARBOR" },
+            { message: "REPTILIAN ELITE EXPOSED", solution: "REPTILIAN ELITE EXPOSED" },
+            { message: "UNDERGROUND CITIES EXIST", solution: "UNDERGROUND CITIES EXIST" },
+            { message: "YETI LURKS IN HIMALAYAS", solution: "YETI LURKS IN HIMALAYAS" },
+            { message: "OBAMA WAS NOT BORN IN US", solution: "OBAMA WAS NOT BORN IN US" },
+            { message: "WATER FLUORIDATION TOXIC", solution: "WATER FLUORIDATION TOXIC" },
+            { message: "FLAT EARTH MAP IS REAL", solution: "FLAT EARTH MAP IS REAL" },
+            { message: "PRINCE DIANA WAS MURDERED", solution: "PRINCE DIANA WAS MURDERED" },
+            { message: "ALIEN ABDUCTIONS ARE REAL", solution: "ALIEN ABDUCTIONS ARE REAL" },
+            { message: "VATICAN HAS ALIEN SECRETS", solution: "VATICAN HAS ALIEN SECRETS" },
+            { message: "DEMONS IN OUR DIMENSION", solution: "DEMONS IN OUR DIMENSION" },
+            { message: "SECRET GOVERNMENT BASES", solution: "SECRET GOVERNMENT BASES" },
+            { message: "SECRET LABS MAKE VIRUSES", solution: "SECRET LABS MAKE VIRUSES" },
+            { message: "GMO FOODS ARE DANGEROUS", solution: "GMO FOODS ARE DANGEROUS" },
+            { message: "BIG PHARMA CONTROLS CURES", solution: "BIG PHARMA CONTROLS CURES" },
+            { message: "THE US GOVERNMENT IS A LIE", solution: "THE US GOVERNMENT IS A LIE" },
+            { message: "CHIP IMPLANTS ARE MANDATORY", solution: "CHIP IMPLANTS ARE MANDATORY" },
+            { message: "MICROCHIPS IN VACCINES", solution: "MICROCHIPS IN VACCINES" },
+            { message: "CELL TOWERS CAUSE ILLNESS", solution: "CELL TOWERS CAUSE ILLNESS" },
+            { message: "NEIL ARMSTRONG SAW ALIENS", solution: "NEIL ARMSTRONG SAW ALIENS" },
+            { message: "PLASTIC CAUSES INFERTILITY", solution: "PLASTIC CAUSES INFERTILITY" },
+            { message: "GOVERNMENT CONTROLS WEATHER", solution: "GOVERNMENT CONTROLS WEATHER" },
+            { message: "FEDERAL RESERVE IS A FRAUD", solution: "FEDERAL RESERVE IS A FRAUD" },
+            { message: "THE HUMAN BODY IS A COMPUTER", solution: "THE HUMAN BODY IS A COMPUTER" },
+            { message: "GLOBAL DEBT RESET IMMINENT", solution: "GLOBAL DEBT RESET IMMINENT" },
+            { message: "GENDER IS A SOCIAL CONSTRUCT", solution: "GENDER IS A SOCIAL CONSTRUCT" },
+            { message: "PEARL HARBOR FOREKNOWLEDGE", solution: "PEARL HARBOR FOREKNOWLEDGE" },
+            { message: "ARTIFICIAL SWEETENERS DEADLY", solution: "ARTIFICIAL SWEETENERS DEADLY" },
+            { message: "THE FBI KILLED MARILYN MONROE", solution: "THE FBI KILLED MARILYN MONROE" },
+            { message: "SECRET SPACE PROGRAM DECEPTION", solution: "SECRET SPACE PROGRAM DECEPTION" }
         ];
-        
+
         let currentRound = 0;
         let currentPuzzle = null;
-        let revealedCharCount = 0; // How many characters of the current puzzle are solved/revealed
+        let revealedCharCount = 0;
 
         // --- Global state for the single active glowing message character ---
-        let currentGlowingCharObject = null; // Reference to the actual {char, isGlowing} object
+        let currentGlowingCharObject = null; // Reference to the actual {char, isGlowing, missed} object
         let currentGlowingColumnIndex = -1; // The column this glowing object is in
 
-        const puzzleAdvanceDelayMs = 1000; // Delay before next letter appears after correct input/space skip
+        const puzzleAdvanceDelayMs = 1500; // Delay before next letter appears after correct input/space skip
+
+        // --- Game State Variables ---
+        let missCount = 0;
+        let maxMisses = 3; // Will be calculated dynamically based on puzzle length
+        let gameActive = false; // Flag to control game logic (miss detection, input)
+        let lastTypedChar = ''; // Stores the last character pressed on the custom keyboard
+
+        // --- Fail Line for Miss Detection ---
+        let failLineY = 0; // Will be calculated dynamically
 
         // --- Utility Functions ---
         function createRandomCharObject() {
-            return { char: String.fromCharCode(65 + Math.floor(seededRNG() * 26)), isGlowing: false };
+            // Include numbers for random background characters as well
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            return { char: chars.charAt(Math.floor(seededRNG() * chars.length)), isGlowing: false, missed: false };
         }
 
         function initializePlayerPuzzleSequence() {
@@ -481,12 +685,9 @@
             const seedArray = cyrb128(playerSeed);
             seededRNG = sfc32(seedArray[0], seedArray[1], seedArray[2], seedArray[3]);
 
-            allRoundsPuzzles = [];
-            const minRounds = 100;
-
-            while (allRoundsPuzzles.length < minRounds) {
-                allRoundsPuzzles.push(...shuffleArray([...basePuzzles], seededRNG));
-            }
+            // To ensure sentences get longer each round, we use the pre-sorted 
+            // basePuzzles array directly without shuffling.
+            allRoundsPuzzles = [...basePuzzles];
         }
 
         // --- Matrix Rain Functions ---
@@ -494,23 +695,24 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
 
+            // Calculate failLineY based on input section's position
+            // failLineY should be the top edge of the input section on the canvas
+            const inputSectionRect = inputSection.getBoundingClientRect();
+            failLineY = inputSectionRect.top; 
+
             columns = Math.floor(canvas.width / font_size);
-            numRows = Math.ceil(canvas.height / font_size); // How many rows fit vertically
+            numRows = Math.ceil(canvas.height / font_size);
 
             streams = [];
             for (let i = 0; i < columns; i++) {
-                // Initialize each stream with a full set of random character objects
-                // We need more characters than just numRows to allow smooth falling and wrapping
                 const initialChars = Array.from({length: numRows + 10}, () => createRandomCharObject());
                 streams[i] = {
                     x: i * font_size,
-                    chars: initialChars, // The character objects currently in this column
-                    // speed: how many frames it takes for this stream to drop one row
-                    speed: Math.floor(seededRNG() * (6 - 3) + 3), // 3 to 6 frames per row drop (slower)
-                    frameCounter: Math.floor(seededRNG() * 6), // Start at random phase for varied movement
-                    // 'headY' tracks the Y-coordinate of the first character in the 'chars' array
-                    // This creates the illusion of characters falling *down*
-                    headY: -Math.floor(seededRNG() * initialChars.length) * font_size // Start random y-offset
+                    chars: initialChars,
+                    // Slightly faster streams: 4 to 9 frames per row drop (previously 5-10)
+                    speed: Math.floor(seededRNG() * (9 - 4) + 4), 
+                    frameCounter: Math.floor(seededRNG() * 10),
+                    headY: -Math.floor(seededRNG() * initialChars.length) * font_size // Start head randomly off-screen above
                 };
             }
 
@@ -531,57 +733,82 @@
                 stream.frameCounter++;
                 if (stream.frameCounter >= stream.speed) {
                     stream.headY += font_size; // Move stream head down one row
-                    // If the first character of the stream goes past the bottom of the screen,
-                    // wrap it around to the top. This creates continuous falling.
+                    // If stream head goes off bottom, reset it to a random position at the top
                     if (stream.headY >= canvas.height) {
-                        stream.headY = -stream.chars.length * font_size; // Reset to top
+                        stream.headY = -Math.floor(seededRNG() * stream.chars.length) * font_size;
                     }
                     stream.frameCounter = 0;
                 }
 
-                // Draw each character in the current stream array
                 for (let j = 0; j < stream.chars.length; j++) {
-                    // Calculate character's actual Y position on screen
                     const charY = stream.headY + j * font_size;
 
-                    // Only draw if character is within screen bounds (with some buffer)
+                    // Only draw characters that are currently visible on screen
                     if (charY > -font_size && charY < canvas.height + font_size) {
                         let charObj = stream.chars[j];
                         let charToDraw = charObj.char;
 
                         // Randomly change regular characters (not the glowing one) for dynamic look
                         if (!charObj.isGlowing && seededRNG() < charChangeProbability) {
-                            charObj.char = String.fromCharCode(65 + Math.floor(seededRNG() * 26));
+                            charObj.char = createRandomCharObject().char;
+                        }
+
+                        // --- Miss Detection Logic ---
+                        // Check if it's the glowing character, game is active, and it hasn't been missed yet
+                        if (charObj.isGlowing && gameActive && !charObj.missed) {
+                            // Check if the glowing character has fallen below the fail line
+                            if (charY + font_size > failLineY) { // Adding font_size because charY is top-left corner
+                                charObj.missed = true; // Mark as missed to prevent multiple counts
+                                charObj.isGlowing = false; // Stop glowing
+                                charObj.char = createRandomCharObject().char; // Revert to a random char
+
+                                missCount++;
+                                missDisplay.textContent = `Misses: ${missCount}/${maxMisses}`;
+                                gameMessage.textContent = `MISSED! ${missCount}/${maxMisses} misses.`;
+                                gameMessage.style.color = "#F00";
+                                gameMessage.style.textShadow = "0 0 8px #F00";
+
+                                if (missCount >= maxMisses) {
+                                    gameOver();
+                                } else {
+                                    // Prepare for next character after a brief delay
+                                    setTimeout(() => {
+                                        gameMessage.textContent = "Finding next anomaly...";
+                                        showNextMessageChar();
+                                    }, puzzleAdvanceDelayMs);
+                                }
+                            }
                         }
 
                         // --- Canvas Shadow and Color for Glow Effect ---
                         if (charObj.isGlowing) {
-                            // Apply white stroke for outline first
-                            ctx.strokeStyle = '#FFFFFF';
+                            // Apply purple stroke for outline first
+                            ctx.strokeStyle = '#E0BBE4'; // Lighter purple
                             ctx.lineWidth = 2; // Thickness of the outline
                             ctx.strokeText(charToDraw, colX, charY);
 
-                            // Then fill with white and strong glow
-                            ctx.fillStyle = "#FFFFFF";
-                            ctx.shadowColor = "#FFF";
-                            ctx.shadowBlur = 30; // Stronger glow
+                            // Then fill with purple and strong glow
+                            ctx.fillStyle = "#800080"; // Purple
+                            ctx.shadowColor = "#E0BBE4"; // Lighter purple glow
+                            ctx.shadowBlur = 40; // Stronger glow
                             ctx.shadowOffsetX = 0;
                             ctx.shadowOffsetY = 0;
                         } else {
-                            // Green characters with fading opacity
+                            // Green characters with calculated opacity (no blur)
+                            // Characters closer to the middle of the screen are brighter
                             let charOpacity;
-                            const distanceFactor = Math.abs(charY - (canvas.height / 2)) / (canvas.height / 2);
-                            charOpacity = 1.0 - (distanceFactor * 0.8); // More opaque near center, fades at edges
+                            const distanceFromCenter = Math.abs(charY - (canvas.height / 2));
+                            const maxDistance = canvas.height / 2;
+                            charOpacity = 1.0 - (distanceFromCenter / maxDistance * 0.8); // Fades out towards top/bottom
                             if (charOpacity < 0.2) charOpacity = 0.2; // Minimum visibility
 
                             ctx.fillStyle = `rgba(0, 255, 0, ${charOpacity})`;
-                            ctx.shadowBlur = 0; // No shadow for regular rain
+                            ctx.shadowBlur = 0; // NO shadow for regular rain characters
                         }
                         ctx.fillText(charToDraw, colX, charY);
                     }
                 }
             }
-
             requestAnimationFrame(drawMatrixRain);
         }
 
@@ -630,12 +857,15 @@
             else if (screenId === 'how-to-play-menu') targetElement = howToPlayMenu;
             else if (screenId === 'game-screen') targetElement = gameScreen;
             else if (screenId === 'congrats-screen') targetElement = congratsScreen;
+            else if (screenId === 'game-over-screen') targetElement = gameOverScreen;
 
             transitionToScreen(targetElement, 
                 () => {}, 
                 () => {
                     if (screenId === 'game-screen') {
-                        answerInput.focus();
+                        showCustomKeyboard(); // Show keyboard when game screen is active
+                    } else {
+                        hideCustomKeyboard(); // Hide keyboard on other screens
                     }
                 }
             );
@@ -645,6 +875,12 @@
         function loadRound() {
             let storedRound = localStorage.getItem('matrixCurrentRound');
             currentRound = storedRound ? parseInt(storedRound) : 0;
+            // Ensure currentRound loops back if all unique puzzles have been played
+            if (currentRound >= allRoundsPuzzles.length) {
+                currentRound = 0; 
+                // Optionally regenerate seed if you want a new shuffled sequence after all 100 rounds
+                // initializePlayerPuzzleSequence(); 
+            }
         }
 
         function saveRound() {
@@ -652,31 +888,39 @@
         }
 
         function startGame() {
-            loadRound();
-            currentRoundDisplay.textContent = currentRound + 1;
+            // Reset game state
+            loadRound(); // Load the stored or reset round
+            missCount = 0;
+            revealedCharCount = 0;
+            currentGlowingCharObject = null;
+            currentGlowingColumnIndex = -1;
+            gameActive = true; // Enable game logic
+            currentPuzzle = allRoundsPuzzles[currentRound]; // Set the current puzzle based on round
 
-            currentPuzzle = allRoundsPuzzles[currentRound];
-            revealedCharCount = 0; // Reset for new puzzle
+            // Calculate max misses based on puzzle length (new algorithm)
+            const numLettersAndNumbersToType = currentPuzzle.message.replace(/ /g, '').length;
+            maxMisses = Math.max(3, Math.ceil(numLettersAndNumbersToType / 5)); // At least 3 misses, then 1 miss per 5 non-space chars
+            missDisplay.textContent = `Misses: ${missCount}/${maxMisses}`;
 
+            currentRoundDisplay.textContent = currentRound + 1; // For Congrats screen display
+
+            // Clear input and messages
             gameMessage.textContent = "";
-            answerInput.value = "";
-            answerInput.maxLength = 1;
-            answerInput.disabled = false;
-            answerInput.placeholder = "Type the revealed letter..."; // Ensure generic placeholder
+            lastTypedChar = ''; // Clear any pending input from keyboard
             
             // Start the process of showing the first char (after delay)
             setTimeout(() => {
+                gameMessage.textContent = ""; // Clear "Finding next anomaly..." if it was there
                 showNextMessageChar();
             }, puzzleAdvanceDelayMs); 
         }
 
         function showNextMessageChar() {
-            // First, ensure any previously glowing character stops glowing
+            // Ensure any previously glowing character stops glowing and resets
             if (currentGlowingCharObject) {
                 currentGlowingCharObject.isGlowing = false;
-                // Important: Change the character back to a random one,
-                // so the old glowing char doesn't remain "correct" if it cycles back.
-                currentGlowingCharObject.char = String.fromCharCode(65 + Math.floor(seededRNG() * 26)); 
+                currentGlowingCharObject.char = createRandomCharObject().char; // Change back to random char
+                currentGlowingCharObject.missed = false; // Reset missed status
                 currentGlowingCharObject = null; // Clear reference
                 currentGlowingColumnIndex = -1;
             }
@@ -686,7 +930,7 @@
                 
                 // --- Handle Spaces Automatically ---
                 if (charToReveal === ' ') {
-                    gameMessage.textContent = "Space detected! Moving to next letter.";
+                    gameMessage.textContent = "Space detected! Finding next anomaly...";
                     gameMessage.style.color = "#0F0";
                     gameMessage.style.textShadow = "0 0 8px #0F0";
                     revealedCharCount++; // Advance to next char
@@ -699,18 +943,23 @@
                 
                 // Ensure the column exists and has characters
                 if (streams[currentGlowingColumnIndex] && streams[currentGlowingColumnIndex].chars.length > 0) {
-                    // Inject the active message character at the very top of the selected stream
-                    // by modifying the first char object in that stream's 'chars' array.
-                    currentGlowingCharObject = streams[currentGlowingColumnIndex].chars[0];
+                    const stream = streams[currentGlowingColumnIndex];
+                    
+                    // Force the stream head to Y=0 to make the glowing char fall from top
+                    stream.headY = 0; 
+                    
+                    // The character object at index 0 of the stream's chars array will now be at Y=0
+                    currentGlowingCharObject = stream.chars[0];
                     currentGlowingCharObject.char = charToReveal; // Set its character
                     currentGlowingCharObject.isGlowing = true; // Make it glow
+                    currentGlowingCharObject.missed = false; // Ensure it's not marked as missed yet
                 } else {
-                    console.error("Could not find stream to inject glowing char!");
+                    console.error("Could not find stream to inject glowing char! Columns:", columns);
                     gameMessage.textContent = "Error: Puzzle could not start. Try resizing.";
                     gameMessage.style.color = "#F00";
                 }
                 
-                gameMessage.textContent = ""; // Clear previous message
+                gameMessage.textContent = ""; // Clear previous messages for new letter
             } else {
                 // All characters revealed, puzzle solved!
                 puzzleSolved();
@@ -718,12 +967,12 @@
         }
 
         function checkAnswer() {
-            const userAnswer = answerInput.value.trim().toUpperCase();
-            answerInput.value = ""; // Always clear input after check
+            const userAnswer = lastTypedChar.trim().toUpperCase();
+            lastTypedChar = ''; // Clear last typed character after checking
 
-            if (!currentGlowingCharObject || currentGlowingColumnIndex === -1 || currentGlowingCharObject.char === ' ') {
-                // If there's no active glowing char, or it's a space (auto-skipped), ignore input.
-                gameMessage.textContent = "Waiting for a letter to appear. Or puzzle already solved.";
+            if (!gameActive || !currentGlowingCharObject || currentGlowingCharObject.char === ' ' || currentGlowingCharObject.missed) {
+                // If game is not active, or no active glowing char, or it's a space (auto-skipped), or already missed, ignore input.
+                gameMessage.textContent = "Waiting for a character or already handled."; // Updated message
                 gameMessage.style.color = "#F00";
                 gameMessage.style.textShadow = "0 0 8px #F00";
                 return;
@@ -737,10 +986,9 @@
                 gameMessage.style.textShadow = "0 0 8px #0F0";
                 
                 // Stop the current char from glowing and reset reference
-                if (currentGlowingCharObject) {
-                    currentGlowingCharObject.isGlowing = false;
-                    currentGlowingCharObject.char = String.fromCharCode(65 + Math.floor(seededRNG() * 26)); // Change it back to random char
-                }
+                currentGlowingCharObject.isGlowing = false;
+                currentGlowingCharObject.char = createRandomCharObject().char; // Change it back to random char
+                currentGlowingCharObject.missed = false; // Reset missed status
                 currentGlowingCharObject = null;
                 currentGlowingColumnIndex = -1;
 
@@ -752,26 +1000,58 @@
                 }, puzzleAdvanceDelayMs); 
 
             } else {
-                gameMessage.textContent = `INCORRECT. Type the correct letter.`; // More generic message
+                gameMessage.textContent = `INCORRECT. Select the correct character.`; // More generic message
                 gameMessage.style.color = "#F00";
                 gameMessage.style.textShadow = "0 0 8px #F00";
             }
         }
 
         function puzzleSolved() {
-            answerInput.disabled = true;
+            gameActive = false; // Pause game logic
             gameMessage.textContent = "Message uncovered!";
             gameMessage.style.color = "#0F0";
             gameMessage.style.textShadow = "0 0 8px #0F0";
 
-            revealedMessageDisplay.textContent = currentPuzzle.message;
+            revealedMessageDisplay.textContent = currentPuzzle.solution; // Use solution for display
             currentRound++;
             saveRound();
-            currentRoundDisplay.textContent = currentRound;
+            currentRoundDisplay.textContent = currentRound + 1; // Display for next round on congrats screen
 
             setTimeout(() => {
                 displayScreen('congrats-screen');
             }, 1000);
+        }
+
+        function gameOver() {
+            gameActive = false; // Pause game logic
+            gameMessage.textContent = "GAME OVER!";
+            gameMessage.style.color = "#F00";
+            gameMessage.style.textShadow = "0 0 8px #F00";
+
+            finalMissCountDisplay.textContent = missCount; // Display final miss count
+            
+            // Clear any lingering glowing character immediately
+            if (currentGlowingCharObject) {
+                currentGlowingCharObject.isGlowing = false;
+                currentGlowingCharObject.char = createRandomCharObject().char;
+                currentGlowingCharObject.missed = false;
+            }
+            currentGlowingCharObject = null;
+            currentGlowingColumnIndex = -1;
+
+
+            setTimeout(() => {
+                displayScreen('game-over-screen');
+            }, 1000);
+        }
+
+        // --- Custom Keyboard Logic ---
+        function showCustomKeyboard() {
+            customKeyboard.style.display = 'flex';
+        }
+
+        function hideCustomKeyboard() {
+            customKeyboard.style.display = 'none';
         }
 
         // --- Event Listeners ---
@@ -797,25 +1077,71 @@
             startGame();
             displayScreen('game-screen');
         });
+
+        playAgainButton.addEventListener('click', () => {
+            // Reset current round for "Play Again"
+            localStorage.setItem('matrixCurrentRound', 0); 
+            startGame();
+            displayScreen('game-screen');
+        });
         
-        answerInput.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter' && !answerInput.disabled) {
-                checkAnswer();
-                event.preventDefault();
-            }
-            if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
-                if (answerInput.value.length >= answerInput.maxLength && event.key !== 'Backspace' && event.key !== 'Delete') {
-                    event.preventDefault();
+        // Add event listeners for custom keyboard buttons
+        customKeyboard.querySelectorAll('.key-button').forEach(button => {
+            button.addEventListener('click', (event) => {
+                event.preventDefault(); // Prevent default actions, e.g., scrolling
+
+                if (!gameActive) return; // Do nothing if game is not active
+
+                const key = button.textContent.trim().toUpperCase(); // Get text, trim, and uppercase
+
+                if (key === 'DEL') {
+                    // DEL is ignored as we don't have an input field to clear
+                    gameMessage.textContent = ""; 
+                } else if (key === 'ENTER') {
+                    // ENTER is less critical now as single char presses submit automatically
+                    // It can be kept to re-check the current state or simply do nothing meaningful
+                    // For now, it just re-triggers check, effectively doing nothing if a char wasn't just set.
+                    checkAnswer(); 
+                } else {
+                    lastTypedChar = key; // Set the single character
+                    // Immediately check answer when a character key (letter or number) is pressed
+                    checkAnswer(); 
                 }
+            });
+        });
+
+        // Add a global keydown listener for desktop users to still type
+        document.addEventListener('keydown', (event) => {
+            if (!gameActive) return;
+
+            const key = event.key.toUpperCase(); // Get the pressed key
+
+            // Regex to match single alphanumeric characters (A-Z, 0-9)
+            if (key.length === 1 && (/[A-Z0-9]/).test(key)) { 
+                lastTypedChar = key;
+                checkAnswer();
+            } else if (key === 'BACKSPACE' || key === 'DELETE') {
+                // Clear lastTypedChar, though it's already cleared after checkAnswer
+                lastTypedChar = ''; 
+                gameMessage.textContent = ""; // Optional: clear message on backspace
+            } else if (key === 'ENTER') {
+                // Check answer on Enter for explicit submission, though auto-submit is primary
+                checkAnswer();
             }
         });
+
 
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             initializePlayerPuzzleSequence();
-            initializeCanvas();
+            initializeCanvas(); // Initialize canvas and calculate failLineY
+
+            // Set up initial state for miss display (will be updated by startGame)
+            missDisplay.textContent = `Misses: 0/3`; 
+
+            // Load round only at the very start to display on menus
             loadRound();
-            currentRoundDisplay.textContent = currentRound + 1; // For display on Congrats screen
+            currentRoundDisplay.textContent = currentRound + 1; 
 
             allScreens.forEach(screen => {
                 screen.classList.add('screen-transition');
