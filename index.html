@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Conspiracy AI</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Prevent scrolling of the background */
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+            color: #0F0; /* Green */
+            text-shadow: 0 0 8px #0F0; /* Subtle glow for default text */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Ensure body takes full viewport height */
+        }
+
+        canvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1; /* Send canvas to the background */
+        }
+
+        /* --- Common screen container styles --- */
+        .screen-container {
+            position: relative;
+            z-index: 1; /* Bring game elements to foreground */
+            background-color: rgba(0, 0, 0, 1.0); /* Solid black background for menus */
+            padding: 25px; /* Slightly less padding for better mobile fit */
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5); /* Green box shadow */
+            text-align: center;
+            max-width: 90%; /* Allow it to take more width on small screens */
+            margin: 20px; /* Add some margin for smaller screens */
+            display: flex; /* Use flexbox for internal alignment */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: auto; /* Allow height to shrink based on content */
+            min-width: auto; /* Allow width to shrink based on content for responsiveness */
+            color: #0F0; /* Text color for screens */
+            box-sizing: border-box; /* Include padding and border in the element's total width */
+        }
+
+        /* --- Fading Animation for ALL Screens --- */
+        .screen-transition {
+            transition: opacity 1s ease-in-out;
+        }
+        .screen-hidden {
+            opacity: 0;
+            pointer-events: none; /* Disable clicks/interactions when hidden */
+        }
+        .screen-visible {
+            opacity: 1;
+            pointer-events: auto; /* Enable clicks/interactions when visible */
+        }
+
+        /* --- Initial Screen States (managed by JS for transitions) --- */
+        #splash-screen {
+            display: flex; /* Starts visible by default */
+        }
+        #how-to-play-menu,
+        #game-screen,
+        #congrats-screen {
+            display: none; /* Hidden by default, will be changed to 'flex' by JS for visible states */
+        }
+
+        h1 {
+            color: #0F0;
+            text-shadow: 0 0 10px #0F0;
+            margin-bottom: 15px;
+            font-size: 2.5em; /* Larger title */
+        }
+
+        h2 {
+            color: #0F0;
+            text-shadow: 0 0 8px #0F0;
+            margin-bottom: 10px;
+            font-size: 1.8em;
+        }
+
+        p {
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            line-height: 1.5;
+            color: #0F0;
+        }
+
+        /* Specific style for scrollable instructions */
+        .instructions-scrollable {
+            max-height: 50vh; /* Max height of 50% of viewport height for scroll */
+            overflow-y: auto; /* Enable vertical scrolling */
+            padding-right: 15px; /* Space for scrollbar */
+            margin-bottom: 20px; /* Space between instructions and button */
+            text-align: left; /* Align instructions text left */
+            padding-left: 10px; /* Add some padding on the left */
+            box-sizing: border-box; /* Include padding in width */
+
+            /* Custom scrollbar styling for Matrix theme */
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: #0F0 #000; /* thumb and track color */
+        }
+
+        /* Webkit browsers (Chrome, Safari) scrollbar */
+        .instructions-scrollable::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .instructions-scrollable::-webkit-scrollbar-track {
+            background: #000;
+            border-radius: 10px;
+        }
+
+        .instructions-scrollable::-webkit-scrollbar-thumb {
+            background-color: #0F0;
+            border-radius: 10px;
+            border: 1px solid #0A0;
+        }
+
+        .button {
+            background-color: #0A0; /* Darker green */
+            color: #000; /* Black text */
+            border: 2px solid #0F0; /* Bright green border */
+            padding: 12px 25px;
+            font-size: 1.3em;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s, box-shadow 0.3s;
+            text-shadow: none; /* No shadow on button text for crispness */
+            margin-top: 20px;
+            white-space: nowrap; /* Prevent button text from wrapping on small screens */
+        }
+
+        .button:hover {
+            background-color: #0F0; /* Bright green on hover */
+            box-shadow: 0 0 15px #0F0; /* Stronger glow */
+            color: #000; /* Black text */
+        }
+
+        /* Game Screen Specific Styles (Minimal UI at bottom) */
+        #game-screen {
+            background-color: transparent; /* No background for the parent div */
+            box-shadow: none; /* No shadow for the parent div */
+            padding: 0;
+            position: fixed; /* Fixed position for bottom alignment */
+            bottom: 20px; /* 20px from the bottom */
+            left: 50%;
+            transform: translateX(-50%); /* Center horizontally */
+            min-width: unset; /* Remove min-width */
+            min-height: unset; /* Remove min-height */
+            display: flex; /* Use flex to align its child (#input-section) */
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically */
+            width: 100%; /* Take full width to center effectively */
+        }
+
+        #input-section {
+            background-color: rgba(0, 0, 0, 0.6); /* Reduced opacity for input area to subtly see rain */
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3); /* Subtle green glow around input */
+            display: flex; /* Use flex to stack input and message */
+            flex-direction: column;
+            align-items: center; /* Center horizontally within input section */
+            max-width: 90%; /* Ensure input section doesn't go off screen on mobile */
+            box-sizing: border-box; /* Include padding/border in max-width */
+        }
+
+        #answer-input {
+            width: 320px; /* Fixed width for the input box */
+            max-width: 100%; /* Allow shrinking on smaller screens */
+            padding: 12px;
+            background-color: #001; /* Very dark blue/black */
+            border: 2px solid #0F0; /* Bright green border */
+            color: #0F0; /* Bright green text */
+            font-size: 1.2em;
+            border-radius: 5px;
+            box-sizing: border-box; /* Include padding and border in the element's total width */
+            outline: none; /* Remove default focus outline */
+            text-align: center;
+            text-shadow: 0 0 5px #0F0; /* Subtle glow on input text */
+        }
+
+        #answer-input::placeholder {
+            color: #0A0; /* Slightly darker green for placeholder */
+        }
+
+        #answer-input:focus {
+            box-shadow: 0 0 10px #0F0; /* Stronger glow on focus */
+        }
+
+        #game-message {
+            min-height: 1.5em; /* Reserve space to prevent layout shifts */
+            color: #F00; /* Default for incorrect (red) */
+            text-shadow: 0 0 8px #F00; /* Red glow */
+            margin-top: 10px; /* Space between input and message */
+            font-size: 1.1em;
+            white-space: nowrap; /* Prevent message from wrapping (important for "Space detected...") */
+        }
+
+        /* Congratulations Screen */
+        #congrats-screen {
+            /* Visibility managed by JS */
+        }
+        #congrats-screen .message-display {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #FFF; /* White for the revealed message */
+            text-shadow: 0 0 15px #FFF, 0 0 25px #0F0; /* Strong glow */
+            margin: 20px 0;
+            padding: 10px;
+            border: 2px solid #0F0;
+            border-radius: 5px;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        /* Blink effect for "Press Any Key" */
+        .blink {
+            animation: blinker 1.5s linear infinite;
+            font-size: 1.5em;
+            margin-top: 30px;
+            text-shadow: 0 0 10px #0F0;
+        }
+
+        @keyframes blinker {
+            50% { opacity: 0; }
+        }
+
+        /* Media queries for better mobile and small screen adjustments */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em; /* Slightly smaller title for mobile */
+            }
+            h2 {
+                font-size: 1.5em; /* Slightly smaller sub-title for mobile */
+            }
+            p {
+                font-size: 1em; /* Base font size remains good */
+            }
+            .button {
+                font-size: 1.1em; /* Smaller button text for mobile */
+                padding: 10px 20px;
+            }
+            .screen-container {
+                padding: 15px; /* Reduce padding further for very small screens */
+                margin: 10px; /* Reduce margin */
+                max-width: 95%; /* Allow it to take up more screen width */
+            }
+            #answer-input {
+                width: 280px; /* Smaller input width for mobile */
+                font-size: 1em;
+            }
+            .instructions-scrollable {
+                max-height: 40vh; /* Adjust scrollable height for smaller screens */
+                padding-right: 10px;
+                padding-left: 5px;
+            }
+        }
+
+        @media (max-height: 500px) { /* For very short screens (e.g., landscape mobile) */
+            .screen-container {
+                padding: 10px;
+                margin: 5px;
+            }
+            h1 {
+                font-size: 1.8em;
+                margin-bottom: 10px;
+            }
+            h2 {
+                font-size: 1.4em;
+                margin-bottom: 5px;
+            }
+            p {
+                font-size: 0.9em;
+                margin-bottom: 10px;
+            }
+            .button {
+                font-size: 1em;
+                padding: 8px 15px;
+                margin-top: 15px;
+            }
+            .instructions-scrollable {
+                max-height: 25vh; /* Dramatically reduce scrollable area for very short screens */
+                margin-bottom: 10px;
+            }
+            .blink {
+                font-size: 1.2em;
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="matrixCanvas"></canvas>
+
+    <!-- NEW: Splash Screen -->
+    <div id="splash-screen" class="screen-container">
+        <h1>Matrix Riddle: Conspiracy AI</h1>
+        <p>Welcome, Awakened One. The digital veil obscures the truth. Can you perceive the hidden messages within the flowing code?</p>
+        <p class="blink">PRESS ANY KEY TO CONTINUE</p>
+    </div>
+
+    <!-- RENAMED: from #main-menu to #how-to-play-menu. Removed redundant title/welcome message. -->
+    <div id="how-to-play-menu" class="screen-container">
+        <h2>How to Play:</h2>
+        <div class="instructions-scrollable"> <!-- NEW: Wrapper for scrollable content -->
+            <p>
+                The screen will be filled with classic Matrix rain (A-Z alphabet). A short,
+                <strong>cryptic conspiracy message</strong> will appear,
+                <strong>letter by letter</strong>, in a single, glowing character that falls
+                within one of the green streams.
+            </p>
+            <p>
+                Observe the currently revealed glowing letter. Type *only* that letter into the box and hit ENTER.
+                Upon correct input, the next letter will be revealed in a new falling stream. Continue until the entire message is deciphered.
+            </p>
+            <p>
+                Decipher the conspiracy, and the "AI" will reveal a new truth in the next round!
+            </p>
+        </div> <!-- END: instructions-scrollable -->
+        <button id="startGameButton" class="button">Uncover the Truth</button>
+    </div>
+
+    <!-- Game Screen (no screen-container class) -->
+    <div id="game-screen">
+        <div id="input-section">
+            <input type="text" id="answer-input" placeholder="Type the revealed letter..." autocomplete="off" maxlength="1">
+            <p id="game-message"></p>
+        </div>
+    </div>
+
+    <div id="congrats-screen" class="screen-container">
+        <h1>CONGRATULATIONS!</h1>
+        <p>You have uncovered the truth:</p>
+        <p class="message-display" id="revealed-message"></p>
+        <p>Round <span id="current-round-display"></span> Complete!</p>
+        <button id="nextRoundButton" class="button">Continue to Next Round</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- NEW: Screen Elements ---
+        const splashScreen = document.getElementById('splash-screen');
+        const howToPlayMenu = document.getElementById('how-to-play-menu'); // Renamed from mainMenu
+        const gameScreen = document.getElementById('game-screen');
+        const congratsScreen = document.getElementById('congrats-screen');
+
+        // All screen elements for easy iteration
+        const allScreens = [splashScreen, howToPlayMenu, gameScreen, congratsScreen];
+
+        // --- Existing UI Elements ---
+        const startGameButton = document.getElementById('startGameButton');
+        const nextRoundButton = document.getElementById('nextRoundButton');
+        const answerInput = document.getElementById('answer-input');
+        const gameMessage = document.getElementById('game-message');
+        const revealedMessageDisplay = document.getElementById('revealed-message');
+        const currentRoundDisplay = document.getElementById('current-round-display');
+
+        // --- Matrix Rain Variables ---
+        let streams = []; // Each element is a stream (column) of characters
+        let font_size = 18;
+        let columns;
+        let numRows; // Calculated based on canvas height and font size
+        const charChangeProbability = 0.03; // Slightly reduced for less visual noise
+
+        // --- Seeded Random Number Generator (for unique puzzle sequences) ---
+        function cyrb128(str) {
+            let h1 = 1779033703 ^ str.length;
+            let h2 = 3110515664 ^ str.length;
+            let h3 = 3456451341 ^ str.length;
+            let h4 = 3301157367 ^ str.length;
+
+            for (let i = 0; i < str.length; i++) {
+                let k = str.charCodeAt(i);
+                h1 = (((h1 << 5) | (h1 >>> 27)) + k) | 0;
+                h2 = (((h2 << 3) | (h2 >>> 29)) + k) | 0;
+                h3 = (((h3 << 3) | (h3 >>> 29)) + k) | 0;
+                h4 = (((h4 << 3) | (h4 >>> 29)) + k) | 0;
+            }
+
+            h1 = h3 ^ (h1 >>> 16);
+            h2 = h4 ^ (h2 >>> 16);
+            h3 = (h1 ^ (h3 >>> 13)) | 0;
+            h4 = (h2 ^ (h4 >>> 13)) | 0;
+
+            return [h1 >>> 0, h2 >>> 0, h3 >>> 0, h4 >>> 0];
+        }
+
+        function sfc32(a, b, c, d) {
+            return function() {
+              a |= 0; b |= 0; c |= 0; d |= 0;
+              let t = (a + b) | 0;
+              a = b ^ (b >>> 9);
+              b = (c + (c << 3)) | 0;
+              c = (c << 21) | (c >>> 11);
+              d = (d + 1) | 0;
+              t = (t + d) | 0;
+              c = (c + t) | 0;
+              return (t >>> 0) / 4294967296;
+            }
+        }
+
+        function shuffleArray(array, rng) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(rng() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [
+                    array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        let playerSeed;
+        let seededRNG;
+        let allRoundsPuzzles;
+
+        // --- Game Variables ---
+        const basePuzzles = [
+            { message: "THE EARTH IS FLAT", solution: "THE EARTH IS FLAT" },
+            { message: "MOON LANDING HOAX", solution: "MOON LANDING HOAX" },
+            { message: "AREA 51 SECRETS", solution: "AREA 51 SECRETS" },
+            { message: "FAKE NEWS MEDIA", solution: "FAKE NEWS MEDIA" },
+            { message: "ILLUMINATI CONFIRMED", solution: "ILLUMINATI CONFIRMED" },
+            { message: "CHEMTRAILS ARE REAL", solution: "CHEMTRAILS ARE REAL" },
+            { message: "BIRDS ARE NOT REAL", solution: "BIRDS ARE NOT REAL" },
+            { message: "BIGFOOT IS ALIVE", solution: "BIGFOOT IS ALIVE" },
+            { message: "ELVIS LIVES", solution: "ELVIS LIVES" },
+            { message: "VACCINES ARE HARMFUL", solution: "VACCINES ARE HARMFUL" },
+            { message: "LIZARD PEOPLE GOVERN", solution: "LIZARD PEOPLE GOVERN" },
+            { message: "JFK ASSASSINATION", solution: "JFK ASSASSINATION" },
+            { message: "9 11 INSIDE JOB", solution: "9 11 INSIDE JOB" },
+            { message: "ADRENOCHROME HARVEST", solution: "ADRENOCHROME HARVEST" },
+            { message: "CRAB PEOPLE ARE REAL", solution: "CRAB PEOPLE ARE REAL" },
+            { message: "GLOBAL WARMING FRAUD", solution: "GLOBAL WARMING FRAUD" },
+            { message: "WATERGATE WAS PLANNED", solution: "WATERGATE WAS PLANNED" },
+            { message: "NESSIE EXISTS", solution: "NESSIE EXISTS" },
+            { message: "FEMA CAMPS ARE READY", solution: "FEMA CAMPS ARE READY" },
+            { message: "ALIENS BUILT PYRAMIDS", solution: "ALIENS BUILT PYRAMIDS" },
+            { message: "CURE FOR CANCER HIDDEN", solution: "CURE FOR CANCER HIDDEN" },
+            { message: "HAARP WEATHER CONTROL", solution: "HAARP WEATHER CONTROL" },
+            { message: "ANCIENT ALIENS TRUTH", solution: "ANCIENT ALIENS TRUTH" },
+            { message: "FLAT EARTH SOCIETY", solution: "FLAT EARTH SOCIETY" },
+            { message: "THE SIMULATION IS REAL", solution: "THE SIMULATION IS REAL" },
+            { message: "MKULTRA IS ACTIVE", solution: "MKULTRA IS ACTIVE" },
+            { message: "DEEP STATE IS WATCHING", solution: "DEEP STATE IS WATCHING" },
+            { message: "QANON IS THE WAY", solution: "QANON IS THE WAY" },
+            { message: "NEW WORLD ORDER", solution: "NEW WORLD ORDER" },
+            { message: "THE GREAT RESET", solution: "THE GREAT RESET" },
+        ];
+        
+        let currentRound = 0;
+        let currentPuzzle = null;
+        let revealedCharCount = 0; // How many characters of the current puzzle are solved/revealed
+
+        // --- Global state for the single active glowing message character ---
+        let currentGlowingCharObject = null; // Reference to the actual {char, isGlowing} object
+        let currentGlowingColumnIndex = -1; // The column this glowing object is in
+
+        const puzzleAdvanceDelayMs = 1000; // Delay before next letter appears after correct input/space skip
+
+        // --- Utility Functions ---
+        function createRandomCharObject() {
+            return { char: String.fromCharCode(65 + Math.floor(seededRNG() * 26)), isGlowing: false };
+        }
+
+        function initializePlayerPuzzleSequence() {
+            playerSeed = localStorage.getItem('matrixPlayerSeed');
+            if (!playerSeed) {
+                playerSeed = Date.now().toString() + Math.random().toString() + Math.random().toString();
+                localStorage.setItem('matrixPlayerSeed', playerSeed);
+            }
+
+            const seedArray = cyrb128(playerSeed);
+            seededRNG = sfc32(seedArray[0], seedArray[1], seedArray[2], seedArray[3]);
+
+            allRoundsPuzzles = [];
+            const minRounds = 100;
+
+            while (allRoundsPuzzles.length < minRounds) {
+                allRoundsPuzzles.push(...shuffleArray([...basePuzzles], seededRNG));
+            }
+        }
+
+        // --- Matrix Rain Functions ---
+        function initializeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            columns = Math.floor(canvas.width / font_size);
+            numRows = Math.ceil(canvas.height / font_size); // How many rows fit vertically
+
+            streams = [];
+            for (let i = 0; i < columns; i++) {
+                // Initialize each stream with a full set of random character objects
+                // We need more characters than just numRows to allow smooth falling and wrapping
+                const initialChars = Array.from({length: numRows + 10}, () => createRandomCharObject());
+                streams[i] = {
+                    x: i * font_size,
+                    chars: initialChars, // The character objects currently in this column
+                    // speed: how many frames it takes for this stream to drop one row
+                    speed: Math.floor(seededRNG() * (6 - 3) + 3), // 3 to 6 frames per row drop (slower)
+                    frameCounter: Math.floor(seededRNG() * 6), // Start at random phase for varied movement
+                    // 'headY' tracks the Y-coordinate of the first character in the 'chars' array
+                    // This creates the illusion of characters falling *down*
+                    headY: -Math.floor(seededRNG() * initialChars.length) * font_size // Start random y-offset
+                };
+            }
+
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawMatrixRain() {
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.font = font_size + "px monospace";
+
+            for (let i = 0; i < streams.length; i++) {
+                let stream = streams[i];
+                const colX = stream.x;
+
+                stream.frameCounter++;
+                if (stream.frameCounter >= stream.speed) {
+                    stream.headY += font_size; // Move stream head down one row
+                    // If the first character of the stream goes past the bottom of the screen,
+                    // wrap it around to the top. This creates continuous falling.
+                    if (stream.headY >= canvas.height) {
+                        stream.headY = -stream.chars.length * font_size; // Reset to top
+                    }
+                    stream.frameCounter = 0;
+                }
+
+                // Draw each character in the current stream array
+                for (let j = 0; j < stream.chars.length; j++) {
+                    // Calculate character's actual Y position on screen
+                    const charY = stream.headY + j * font_size;
+
+                    // Only draw if character is within screen bounds (with some buffer)
+                    if (charY > -font_size && charY < canvas.height + font_size) {
+                        let charObj = stream.chars[j];
+                        let charToDraw = charObj.char;
+
+                        // Randomly change regular characters (not the glowing one) for dynamic look
+                        if (!charObj.isGlowing && seededRNG() < charChangeProbability) {
+                            charObj.char = String.fromCharCode(65 + Math.floor(seededRNG() * 26));
+                        }
+
+                        // --- Canvas Shadow and Color for Glow Effect ---
+                        if (charObj.isGlowing) {
+                            // Apply white stroke for outline first
+                            ctx.strokeStyle = '#FFFFFF';
+                            ctx.lineWidth = 2; // Thickness of the outline
+                            ctx.strokeText(charToDraw, colX, charY);
+
+                            // Then fill with white and strong glow
+                            ctx.fillStyle = "#FFFFFF";
+                            ctx.shadowColor = "#FFF";
+                            ctx.shadowBlur = 30; // Stronger glow
+                            ctx.shadowOffsetX = 0;
+                            ctx.shadowOffsetY = 0;
+                        } else {
+                            // Green characters with fading opacity
+                            let charOpacity;
+                            const distanceFactor = Math.abs(charY - (canvas.height / 2)) / (canvas.height / 2);
+                            charOpacity = 1.0 - (distanceFactor * 0.8); // More opaque near center, fades at edges
+                            if (charOpacity < 0.2) charOpacity = 0.2; // Minimum visibility
+
+                            ctx.fillStyle = `rgba(0, 255, 0, ${charOpacity})`;
+                            ctx.shadowBlur = 0; // No shadow for regular rain
+                        }
+                        ctx.fillText(charToDraw, colX, charY);
+                    }
+                }
+            }
+
+            requestAnimationFrame(drawMatrixRain);
+        }
+
+        // --- Screen Transition Logic ---
+        function transitionToScreen(targetScreenElement, startCallback, endCallback) {
+            let currentActiveScreen = null;
+            for (const screen of allScreens) {
+                if (screen.classList.contains('screen-visible')) {
+                    currentActiveScreen = screen;
+                    break;
+                }
+            }
+            
+            if (currentActiveScreen && currentActiveScreen !== targetScreenElement) {
+                currentActiveScreen.classList.remove('screen-visible');
+                currentActiveScreen.classList.add('screen-hidden');
+
+                currentActiveScreen.addEventListener('transitionend', function handler() {
+                    currentActiveScreen.removeEventListener('transitionend', handler);
+                    currentActiveScreen.style.display = 'none';
+
+                    targetScreenElement.style.display = 'flex';
+                    targetScreenElement.offsetWidth; // Force a reflow
+                    targetScreenElement.classList.remove('screen-hidden');
+                    targetScreenElement.classList.add('screen-visible');
+
+                    if (startCallback) startCallback();
+
+                    targetScreenElement.addEventListener('transitionend', function handler2() {
+                        targetScreenElement.removeEventListener('transitionend', handler2);
+                        if (endCallback) endCallback();
+                    }, { once: true });
+                }, { once: true });
+            } else if (!currentActiveScreen && targetScreenElement === splashScreen) { 
+                if (startCallback) startCallback();
+                if (endCallback) endCallback();
+            } else if (currentActiveScreen === targetScreenElement) { 
+                 if (endCallback) endCallback();
+            }
+        }
+
+        // Main function to initiate screen display/transition
+        function displayScreen(screenId) {
+            let targetElement;
+            if (screenId === 'splash-screen') targetElement = splashScreen;
+            else if (screenId === 'how-to-play-menu') targetElement = howToPlayMenu;
+            else if (screenId === 'game-screen') targetElement = gameScreen;
+            else if (screenId === 'congrats-screen') targetElement = congratsScreen;
+
+            transitionToScreen(targetElement, 
+                () => {}, 
+                () => {
+                    if (screenId === 'game-screen') {
+                        answerInput.focus();
+                    }
+                }
+            );
+        }
+
+        // --- Game Logic Functions ---
+        function loadRound() {
+            let storedRound = localStorage.getItem('matrixCurrentRound');
+            currentRound = storedRound ? parseInt(storedRound) : 0;
+        }
+
+        function saveRound() {
+            localStorage.setItem('matrixCurrentRound', currentRound);
+        }
+
+        function startGame() {
+            loadRound();
+            currentRoundDisplay.textContent = currentRound + 1;
+
+            currentPuzzle = allRoundsPuzzles[currentRound];
+            revealedCharCount = 0; // Reset for new puzzle
+
+            gameMessage.textContent = "";
+            answerInput.value = "";
+            answerInput.maxLength = 1;
+            answerInput.disabled = false;
+            answerInput.placeholder = "Type the revealed letter..."; // Ensure generic placeholder
+            
+            // Start the process of showing the first char (after delay)
+            setTimeout(() => {
+                showNextMessageChar();
+            }, puzzleAdvanceDelayMs); 
+        }
+
+        function showNextMessageChar() {
+            // First, ensure any previously glowing character stops glowing
+            if (currentGlowingCharObject) {
+                currentGlowingCharObject.isGlowing = false;
+                // Important: Change the character back to a random one,
+                // so the old glowing char doesn't remain "correct" if it cycles back.
+                currentGlowingCharObject.char = String.fromCharCode(65 + Math.floor(seededRNG() * 26)); 
+                currentGlowingCharObject = null; // Clear reference
+                currentGlowingColumnIndex = -1;
+            }
+
+            if (revealedCharCount < currentPuzzle.message.length) {
+                const charToReveal = currentPuzzle.message[revealedCharCount];
+                
+                // --- Handle Spaces Automatically ---
+                if (charToReveal === ' ') {
+                    gameMessage.textContent = "Space detected! Moving to next letter.";
+                    gameMessage.style.color = "#0F0";
+                    gameMessage.style.textShadow = "0 0 8px #0F0";
+                    revealedCharCount++; // Advance to next char
+                    setTimeout(() => showNextMessageChar(), puzzleAdvanceDelayMs); // Auto-advance after a short delay
+                    return; // Don't wait for input for spaces
+                }
+                
+                // For non-space characters: set up the active glowing character
+                currentGlowingColumnIndex = Math.floor(seededRNG() * columns); // Choose random column for this char
+                
+                // Ensure the column exists and has characters
+                if (streams[currentGlowingColumnIndex] && streams[currentGlowingColumnIndex].chars.length > 0) {
+                    // Inject the active message character at the very top of the selected stream
+                    // by modifying the first char object in that stream's 'chars' array.
+                    currentGlowingCharObject = streams[currentGlowingColumnIndex].chars[0];
+                    currentGlowingCharObject.char = charToReveal; // Set its character
+                    currentGlowingCharObject.isGlowing = true; // Make it glow
+                } else {
+                    console.error("Could not find stream to inject glowing char!");
+                    gameMessage.textContent = "Error: Puzzle could not start. Try resizing.";
+                    gameMessage.style.color = "#F00";
+                }
+                
+                gameMessage.textContent = ""; // Clear previous message
+            } else {
+                // All characters revealed, puzzle solved!
+                puzzleSolved();
+            }
+        }
+
+        function checkAnswer() {
+            const userAnswer = answerInput.value.trim().toUpperCase();
+            answerInput.value = ""; // Always clear input after check
+
+            if (!currentGlowingCharObject || currentGlowingColumnIndex === -1 || currentGlowingCharObject.char === ' ') {
+                // If there's no active glowing char, or it's a space (auto-skipped), ignore input.
+                gameMessage.textContent = "Waiting for a letter to appear. Or puzzle already solved.";
+                gameMessage.style.color = "#F00";
+                gameMessage.style.textShadow = "0 0 8px #F00";
+                return;
+            }
+
+            const expectedChar = currentGlowingCharObject.char;
+
+            if (userAnswer === expectedChar) {
+                gameMessage.textContent = "Correct! Finding next anomaly...";
+                gameMessage.style.color = "#0F0";
+                gameMessage.style.textShadow = "0 0 8px #0F0";
+                
+                // Stop the current char from glowing and reset reference
+                if (currentGlowingCharObject) {
+                    currentGlowingCharObject.isGlowing = false;
+                    currentGlowingCharObject.char = String.fromCharCode(65 + Math.floor(seededRNG() * 26)); // Change it back to random char
+                }
+                currentGlowingCharObject = null;
+                currentGlowingColumnIndex = -1;
+
+                revealedCharCount++; // Advance to the next character in the puzzle
+                
+                // Introduce a delay before showing the next character
+                setTimeout(() => {
+                    showNextMessageChar();
+                }, puzzleAdvanceDelayMs); 
+
+            } else {
+                gameMessage.textContent = `INCORRECT. Type the correct letter.`; // More generic message
+                gameMessage.style.color = "#F00";
+                gameMessage.style.textShadow = "0 0 8px #F00";
+            }
+        }
+
+        function puzzleSolved() {
+            answerInput.disabled = true;
+            gameMessage.textContent = "Message uncovered!";
+            gameMessage.style.color = "#0F0";
+            gameMessage.style.textShadow = "0 0 8px #0F0";
+
+            revealedMessageDisplay.textContent = currentPuzzle.message;
+            currentRound++;
+            saveRound();
+            currentRoundDisplay.textContent = currentRound;
+
+            setTimeout(() => {
+                displayScreen('congrats-screen');
+            }, 1000);
+        }
+
+        // --- Event Listeners ---
+        window.addEventListener('resize', initializeCanvas); 
+        
+        // Splash Screen interaction (any key/click)
+        let splashActive = true;
+        function handleSplashInteraction() {
+            if (splashActive) {
+                document.removeEventListener('keydown', handleSplashInteraction);
+                document.removeEventListener('click', handleSplashInteraction);
+                splashActive = false;
+                displayScreen('how-to-play-menu');
+            }
+        }
+
+        startGameButton.addEventListener('click', () => {
+            startGame();
+            displayScreen('game-screen');
+        });
+
+        nextRoundButton.addEventListener('click', () => {
+            startGame();
+            displayScreen('game-screen');
+        });
+        
+        answerInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !answerInput.disabled) {
+                checkAnswer();
+                event.preventDefault();
+            }
+            if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+                if (answerInput.value.length >= answerInput.maxLength && event.key !== 'Backspace' && event.key !== 'Delete') {
+                    event.preventDefault();
+                }
+            }
+        });
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initializePlayerPuzzleSequence();
+            initializeCanvas();
+            loadRound();
+            currentRoundDisplay.textContent = currentRound + 1; // For display on Congrats screen
+
+            allScreens.forEach(screen => {
+                screen.classList.add('screen-transition');
+                if (screen === splashScreen) {
+                    screen.classList.add('screen-visible');
+                    screen.style.display = 'flex';
+                } else {
+                    screen.classList.add('screen-hidden');
+                    screen.style.display = 'none';
+                }
+            });
+
+            document.addEventListener('keydown', handleSplashInteraction);
+            document.addEventListener('click', handleSplashInteraction);
+
+            drawMatrixRain(); // Start the background animation
+        });
+    </script>
+</body>
+</html>
